@@ -1,0 +1,466 @@
+use crate::{
+    knowledge, remote, sync,
+    vault::{Operation, Result, Vault},
+    CLOUD_ORIGIN,
+};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use notify::Watcher;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::{collections::HashMap, fs, path::PathBuf, sync::mpsc};
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+struct Registry {
+    recent: Vec<Value>,
+    server: Option<String>,
+    settings: Value,
+}
+pub struct Engine {
+    folder: PathBuf,
+    registry: Registry,
+    vaults: HashMap<String, Vault>,
+    watchers: HashMap<String, notify::RecommendedWatcher>,
+    changes: mpsc::Receiver<String>,
+    change_sender: mpsc::Sender<String>,
+    runtime: tokio::runtime::Runtime,
+    pending_update: Option<crate::updater::PreparedUpdate>,
+}
+fn field<'a>(v: &'a Value, key: &str) -> Result<&'a str> {
+    v[key].as_str().ok_or_else(|| format!("Missing {}.", key))
+}
+impl Engine {
+    pub fn new(folder: PathBuf) -> Result<Self> {
+        fs::create_dir_all(&folder).map_err(|_| "Cannot open desktop settings folder.")?;
+        let registry = match fs::read(folder.join("registry.json")) {
+            Ok(bytes) => serde_json::from_slice(&bytes).map_err(|_| {
+                "Cannot read desktop settings; preserve registry.json and restore its backup."
+            })?,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Registry::default(),
+            Err(_) => return Err("Cannot read desktop settings.".into()),
+        };
+        let (tx, rx) = mpsc::channel();
+        Ok(Self {
+            folder,
+            registry,
+            vaults: HashMap::new(),
+            watchers: HashMap::new(),
+            changes: rx,
+            change_sender: tx,
+            runtime: tokio::runtime::Runtime::new().map_err(|_| "Cannot start network worker.")?,
+            pending_update: None,
+        })
+    }
+    fn persist(&self) -> Result<()> {
+        use std::io::Write;
+        let mut file = tempfile::NamedTempFile::new_in(&self.folder)
+            .map_err(|_| "Cannot stage desktop settings.")?;
+        file.write_all(&serde_json::to_vec(&self.registry).map_err(|_| "Cannot encode settings.")?)
+            .map_err(|_| "Cannot save settings.")?;
+        file.as_file()
+            .sync_all()
+            .map_err(|_| "Cannot flush settings.")?;
+        file.persist(self.folder.join("registry.json"))
+            .map_err(|_| "Cannot replace settings.")?;
+        Ok(())
+    }
+    pub fn server(&self) -> Result<String> {
+        self.registry
+            .server
+            .clone()
+            .ok_or("Sign in to Helious Cloud or your server first.".into())
+    }
+    pub fn request(&self, path: &str, method: &str, body: Value) -> Result<Value> {
+        let reply = self
+            .runtime
+            .block_on(remote::request(&self.server()?, path, method, body))?;
+        if !(200..300).contains(&reply.status) {
+            return Err(reply.data["error"]
+                .as_str()
+                .unwrap_or("The server refused this request.")
+                .to_string());
+        }
+        Ok(reply.data)
+    }
+    pub fn local(&mut self, id: &str) -> Result<&mut Vault> {
+        self.vaults
+            .get_mut(id)
+            .ok_or("Open this local vault first.".into())
+    }
+    fn open(&mut self, path: PathBuf) -> Result<Value> {
+        let canonical = fs::canonicalize(&path).map_err(|_| "Cannot open that folder.")?;
+        let existing = self
+            .vaults
+            .values()
+            .find(|v| v.root == canonical)
+            .map(|v| v.config.id.clone());
+        let id = if let Some(id) = existing {
+            id
+        } else {
+            let vault = Vault::open(path)?;
+            let id = vault.config.id.clone();
+            if self.vaults.contains_key(&id) {
+                return Err("A different folder with this vault ID is already open.".into());
+            }
+            let sender = self.change_sender.clone();
+            let changed = id.clone();
+            let mut watcher =
+                notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+                    if let Ok(event) = event {
+                        if !matches!(event.kind, notify::EventKind::Access(_))
+                            && event
+                                .paths
+                                .iter()
+                                .any(|p| !p.components().any(|s| s.as_os_str() == ".helious"))
+                        {
+                            let _ = sender.send(changed.clone());
+                        }
+                    }
+                })
+                .map_err(|_| "Cannot start folder watcher.")?;
+            watcher
+                .watch(&vault.root, notify::RecursiveMode::Recursive)
+                .map_err(|_| "Cannot watch this folder.")?;
+            self.watchers.insert(id.clone(), watcher);
+            self.vaults.insert(id.clone(), vault);
+            id
+        };
+        let vault = self.local(&id)?;
+        let snapshot = vault.scan()?;
+        let recent = json!({"id":id,"name":vault.config.name,"path":vault.root.to_string_lossy()});
+        self.registry.recent.retain(|r| r["id"] != id);
+        self.registry.recent.insert(0, recent);
+        self.registry.recent.truncate(20);
+        self.persist()?;
+        Ok(snapshot)
+    }
+    fn local_notes(&mut self, id: &str) -> Result<Vec<Value>> {
+        let vault = self.local(id)?;
+        let snapshot = vault.scan()?;
+        Ok(snapshot["files"]
+            .as_array()
+            .ok_or("Cannot list local files.")?
+            .iter()
+            .filter(|n| n["kind"] == "note")
+            .map(|n| {
+                let mut note = n.clone();
+                note["title"] = json!(knowledge::title(
+                    n["path"].as_str().unwrap_or(""),
+                    n["markdown"].as_str().unwrap_or("")
+                ));
+                note
+            })
+            .collect())
+    }
+    pub fn execute(&mut self, req: Value) -> Result<Value> {
+        let op = field(&req, "operation")?;
+        match op {
+            "check_update" => self.runtime.block_on(crate::updater::check()),
+            "download_update" => {
+                self.pending_update = Some(self.runtime.block_on(crate::updater::prepare())?);
+                Ok(json!({"ready":true}))
+            }
+            "install_update" => {
+                crate::updater::install(
+                    self.pending_update
+                        .take()
+                        .ok_or("Download a verified update first.")?,
+                )?;
+                Ok(json!({"installing":true}))
+            }
+            "status" => {
+                let mut changed = vec![];
+                while let Ok(id) = self.changes.try_recv() {
+                    if !changed.contains(&id) {
+                        changed.push(id);
+                    }
+                }
+                Ok(
+                    json!({"recent":self.registry.recent,"server":self.registry.server,"cloudOrigin":CLOUD_ORIGIN,"settings":self.registry.settings,"changedVaults":changed,"version":"0.8.1"}),
+                )
+            }
+            "open_local" => self.open(field(&req, "path")?.into()),
+            "open_recent" => {
+                let path = self
+                    .registry
+                    .recent
+                    .iter()
+                    .find(|r| r["id"] == req["id"])
+                    .and_then(|r| r["path"].as_str())
+                    .ok_or("Recent folder not found.")?
+                    .to_string();
+                self.open(path.into())
+            }
+            "close_local" => {
+                let id = field(&req, "vaultId")?;
+                self.watchers.remove(id);
+                self.vaults.remove(id);
+                Ok(json!({"ok":true}))
+            }
+            "settings" => {
+                let settings = &req["settings"];
+                let theme = settings["theme"].as_str().unwrap_or("dark");
+                if !["dark", "light", "system"].contains(&theme) {
+                    return Err("Invalid appearance.".into());
+                }
+                let size = settings["fontSize"].as_u64().unwrap_or(16).clamp(12, 28);
+                self.registry.settings = json!({"theme":theme,"fontSize":size,"wrap":settings["wrap"].as_bool().unwrap_or(true),"automaticChecks":settings["automaticChecks"].as_bool().unwrap_or(true),"automaticInstall":settings["automaticInstall"].as_bool().unwrap_or(false)});
+                self.persist()?;
+                Ok(self.registry.settings.clone())
+            }
+            "login" => {
+                let origin = remote::origin(req["origin"].as_str().unwrap_or(CLOUD_ORIGIN))?;
+                let response = self.runtime.block_on(remote::connect(
+                    &origin,
+                    field(&req, "email")?,
+                    field(&req, "password")?,
+                    req["code"]
+                        .as_str()
+                        .filter(|s| !s.is_empty())
+                        .map(str::to_string),
+                ))?;
+                if response.status != 200 {
+                    return Err(response.data["error"]
+                        .as_str()
+                        .unwrap_or("Sign-in failed. Check your details and email verification.")
+                        .into());
+                }
+                self.registry.server = Some(origin);
+                self.persist()?;
+                Ok(response.data)
+            }
+            "logout" => {
+                let server = self.server()?;
+                let revoked = self.request("/api/auth/logout", "POST", json!({})).is_ok();
+                remote::forget(&server)?;
+                self.registry.server = None;
+                self.persist()?;
+                Ok(json!({"serverRevoked":revoked}))
+            }
+            "api" => self.request(
+                field(&req, "path")?,
+                req["method"].as_str().unwrap_or("GET"),
+                req["body"].clone(),
+            ),
+            "local_snapshot" => self.local(field(&req, "vaultId")?)?.scan(),
+            "local_config" => {
+                let id = field(&req, "vaultId")?;
+                if let Some(config) = req["value"].get("sync").filter(|v| !v.is_null()) {
+                    let local = self.local(id)?.scan()?;
+                    if config["schema"] != 1 || config["serverOrigin"] != self.server()? {
+                        return Err("Pair with the connected server origin.".into());
+                    }
+                    let me = self.request("/api/auth/me", "GET", Value::Null)?;
+                    if me["user"]["id"] != config["ownerId"] {
+                        return Err("Pair with the currently signed-in account.".into());
+                    }
+                    let vault_id = field(config, "vaultId")?;
+                    if !crate::vault::valid_id(vault_id) {
+                        return Err("Invalid server vault.".into());
+                    }
+                    let remote = self.request(
+                        &format!("/api/vaults/{}/spaces", vault_id),
+                        "GET",
+                        Value::Null,
+                    )?;
+                    let mappings = config["mappings"]
+                        .as_object()
+                        .filter(|m| !m.is_empty() && m.len() <= 100)
+                        .ok_or("Choose Spaces to sync.")?;
+                    let mut selected = std::collections::HashSet::new();
+                    for (key, target) in mappings {
+                        let target = target
+                            .as_str()
+                            .filter(|v| crate::vault::valid_id(v))
+                            .ok_or("Invalid mapped Space.")?;
+                        if !selected.insert(target) {
+                            return Err("Each server Space may be mapped only once.".into());
+                        }
+                        let source = local["spaces"]
+                            .as_array()
+                            .and_then(|s| s.iter().find(|s| s["id"] == *key))
+                            .ok_or("Local Space not found.")?;
+                        let destination = remote["spaces"]
+                            .as_array()
+                            .and_then(|s| s.iter().find(|s| s["id"] == target))
+                            .ok_or("Server Space not found.")?;
+                        if (source["kind"] == "personal" || destination["kind"] == "personal")
+                            && req["confirmPersonal"] != true
+                        {
+                            return Err("Explicitly confirm Personal Space sharing.".into());
+                        }
+                    }
+                }
+                self.local(id)?.configure(req["value"].clone())?;
+                Ok(json!({"ok":true,"sync":self.local(id)?.config.sync}))
+            }
+            "notes" => {
+                if req["source"] == "local" {
+                    Ok(json!({"notes":self.local_notes(field(&req,"vaultId")?)?}))
+                } else {
+                    let id = field(&req, "vaultId")?;
+                    let mut all = vec![];
+                    loop {
+                        let page = self.request(
+                            &format!("/api/vaults/{}/notes?limit=100&offset={}", id, all.len()),
+                            "GET",
+                            Value::Null,
+                        )?;
+                        let batch = page["notes"].as_array().ok_or("Invalid note list.")?;
+                        if batch.is_empty() {
+                            break;
+                        }
+                        all.extend(batch.clone());
+                        if all.len() >= page["total"].as_u64().unwrap_or(0) as usize
+                            || all.len() >= 10000
+                        {
+                            break;
+                        }
+                    }
+                    Ok(json!({"notes":all}))
+                }
+            }
+            "read_note" => {
+                if req["source"] == "local" {
+                    let note = self
+                        .local_notes(field(&req, "vaultId")?)?
+                        .into_iter()
+                        .find(|n| n["id"] == req["id"])
+                        .ok_or("Note not found.")?;
+                    Ok(json!({"note":note}))
+                } else {
+                    self.request(
+                        &format!(
+                            "/api/vaults/{}/notes/{}",
+                            field(&req, "vaultId")?,
+                            field(&req, "id")?
+                        ),
+                        "GET",
+                        Value::Null,
+                    )
+                }
+            }
+            "save_note" | "create_note" | "delete_note" => {
+                let id = field(&req, "vaultId")?;
+                if req["source"] != "local" {
+                    let suffix = if op == "create_note" {
+                        String::new()
+                    } else {
+                        format!("/{}", field(&req, "id")?)
+                    };
+                    return self.request(
+                        &format!("/api/vaults/{}/notes{}", id, suffix),
+                        if op == "create_note" {
+                            "POST"
+                        } else if op == "delete_note" {
+                            "DELETE"
+                        } else {
+                            "PATCH"
+                        },
+                        req["body"].clone(),
+                    );
+                }
+                let body = &req["body"];
+                let vault = self.local(id)?;
+                vault.scan()?;
+                let previous = if op == "create_note" {
+                    None
+                } else {
+                    Some(
+                        vault
+                            .config
+                            .files
+                            .values()
+                            .find(|r| !r.deleted && r.id == req["id"].as_str().unwrap_or(""))
+                            .cloned()
+                            .ok_or("Note not found.")?,
+                    )
+                };
+                let path = previous
+                    .as_ref()
+                    .map(|r| r.path.as_str())
+                    .unwrap_or(field(body, "path")?);
+                if previous
+                    .as_ref()
+                    .is_some_and(|r| body["path"].as_str().is_some_and(|p| p != r.path))
+                {
+                    return Err("Native renaming is available from the web workspace while coordinated rename is being ported.".into());
+                }
+                if !path.to_lowercase().ends_with(".md") {
+                    return Err("Notes must end with .md.".into());
+                }
+                let space = body["spaceId"]
+                    .as_str()
+                    .or_else(|| previous.as_ref().map(|r| r.space_id.as_str()))
+                    .or_else(|| {
+                        vault
+                            .config
+                            .spaces
+                            .iter()
+                            .find(|s| s.kind == "personal")
+                            .map(|s| s.id.as_str())
+                    })
+                    .ok_or("Choose a Space.")?
+                    .to_string();
+                let expected = if op == "create_note" {
+                    None
+                } else {
+                    Some(field(body, "hash")?.to_string())
+                };
+                let data = if op == "delete_note" {
+                    None
+                } else {
+                    Some(STANDARD.encode(field(body, "markdown")?.as_bytes()))
+                };
+                let path = path.to_string();
+                vault.commit(vec![Operation {
+                    path: path.clone(),
+                    expected_hash: expected,
+                    data,
+                    space_id: space,
+                    source_id: None,
+                }])?;
+                let note = self
+                    .local_notes(id)?
+                    .into_iter()
+                    .find(|n| n["path"] == path);
+                Ok(json!({"note":note,"ok":true}))
+            }
+            "graph" => {
+                let id = field(&req, "vaultId")?;
+                if req["source"] == "local" {
+                    Ok(knowledge::graph(&self.local_notes(id)?))
+                } else {
+                    self.request(&format!("/api/vaults/{}/graph", id), "GET", Value::Null)
+                }
+            }
+            "history" => {
+                if req["source"] == "local" {
+                    self.local(field(&req, "vaultId")?)?
+                        .history(field(&req, "id")?, req["revision"].as_u64())
+                } else {
+                    let suffix = req["revision"]
+                        .as_u64()
+                        .map(|r| format!("/{}", r))
+                        .unwrap_or_default();
+                    self.request(
+                        &format!(
+                            "/api/vaults/{}/notes/{}/history{}",
+                            field(&req, "vaultId")?,
+                            field(&req, "id")?,
+                            suffix
+                        ),
+                        "GET",
+                        Value::Null,
+                    )
+                }
+            }
+            "sync" => sync::run(self, field(&req, "vaultId")?, None),
+            "resolve_sync" => sync::run(
+                self,
+                field(&req, "vaultId")?,
+                Some((field(&req, "path")?.into(), field(&req, "choice")?.into())),
+            ),
+            _ => Err("Unknown native operation.".into()),
+        }
+    }
+}

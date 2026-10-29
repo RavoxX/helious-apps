@@ -1,0 +1,12 @@
+{
+  "name": "@helious/desktop",
+  "version": "0.8.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/check.mjs",
+    "dev": "cargo run --manifest-path Cargo.toml -p helious-windows",
+    "native:check": "cargo check --manifest-path Cargo.toml",
+    "native:test": "cargo test --manifest-path Cargo.toml"
+  }
+}

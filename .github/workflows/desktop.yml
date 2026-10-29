@@ -1,0 +1,89 @@
+name: Native desktop builds and releases
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['apps/desktop/**', '.github/workflows/desktop.yml']
+  pull_request:
+    paths: ['apps/desktop/**', '.github/workflows/desktop.yml']
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/desktop -> target' }
+      - name: Validate release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node apps/desktop/scripts/release.mjs validate
+      - run: cargo fmt --all --manifest-path apps/desktop/Cargo.toml --check
+      - run: cargo test --locked --release --manifest-path apps/desktop/Cargo.toml
+      - name: Install packaging tools
+        shell: powershell
+        run: choco install nsis wixtoolset --yes --no-progress
+      - name: Package EXE and MSI
+        shell: powershell
+        run: ./apps/desktop/scripts/build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helious-windows
+          path: |
+            apps/desktop/target/installers/*.exe
+            apps/desktop/target/installers/*.msi
+          if-no-files-found: error
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-apple-darwin,x86_64-apple-darwin' }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'apps/desktop -> target' }
+      - uses: actions/cache@v4
+        with:
+          path: apps/desktop/macos/.build
+          key: swift-${{ runner.os }}-${{ hashFiles('apps/desktop/macos/Package*') }}
+      - name: Validate release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node apps/desktop/scripts/release.mjs validate
+      - run: cargo test --locked --release --manifest-path apps/desktop/Cargo.toml -p helious-native --target aarch64-apple-darwin
+      - run: bash apps/desktop/scripts/build-macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helious-macos
+          path: |
+            apps/desktop/target/installers/*.dmg
+            apps/desktop/target/installers/*.zip
+          if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: helious-*
+          path: installers
+          merge-multiple: true
+      - name: Sign updates and publish installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HELIOUS_UPDATE_PRIVATE_KEY: ${{ secrets.HELIOUS_UPDATE_PRIVATE_KEY }}
+        run: node apps/desktop/scripts/release.mjs publish installers

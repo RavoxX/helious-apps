@@ -1,0 +1,6 @@
+[workspace]
+members = ["engine", "windows"]
+resolver = "2"
+
+[profile.release]
+strip = true

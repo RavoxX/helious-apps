@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Helious" Language="1033" Version="$(var.Version)" Manufacturer="Helious" UpgradeCode="CBB2D6E2-C092-5A43-BC92-14B51EF4EA88">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" Platform="x64"/>
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Helious is already installed."/>
+    <MediaTemplate EmbedCab="yes"/>
+    <Icon Id="HeliousIcon" SourceFile="$(var.AppIcon)"/>
+    <Property Id="ARPPRODUCTICON" Value="HeliousIcon"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder"><Directory Id="Programs" Name="Programs"><Directory Id="INSTALLFOLDER" Name="Helious">
+        <Component Id="Application" Guid="26A66E2E-AD47-4A8D-8F08-E50D1207976E" Win64="yes">
+          <File Id="HeliousExe" Source="$(var.AppExe)" KeyPath="yes"/>
+        </Component>
+      </Directory></Directory></Directory>
+      <Directory Id="ProgramMenuFolder"><Component Id="StartShortcut" Guid="4CEE0783-927E-4CF9-9D11-F0EC85CE6620" Win64="yes">
+        <Shortcut Id="HeliousShortcut" Name="Helious" Target="[INSTALLFOLDER]Helious.exe" WorkingDirectory="INSTALLFOLDER" Icon="HeliousIcon"/>
+        <RegistryValue Root="HKCU" Key="Software\Helious" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component></Directory>
+    </Directory>
+    <Feature Id="Main" Title="Helious" Level="1"><ComponentRef Id="Application"/><ComponentRef Id="StartShortcut"/></Feature>
+  </Product>
+</Wix>

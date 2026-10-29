@@ -1,0 +1,120 @@
+.email-scene {
+  width: min(1180px, calc(100% - 64px));
+  min-height: 740px;
+  margin: auto;
+  padding: 64px 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: oklch(0.9 0.05 220) none center/cover;
+}
+.email-card {
+  width: min(100%, 460px);
+  padding: 38px;
+  background: var(--color-bg);
+  border-radius: 12px;
+}
+.email-card > svg {
+  color: var(--light-blue);
+  margin-bottom: 24px;
+}
+.email-card h1 {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+.email-card p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--color-muted);
+  margin: 18px 0;
+}
+.email-card .milestone {
+  color: var(--light-blue);
+  font-size: 10px;
+}
+.email-card > .back-link {
+  margin-top: 30px;
+  display: inline-flex;
+}
+.email-card .primary-button {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  gap: 20px;
+}
+.email-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 22px;
+}
+.email-status > svg {
+  flex-shrink: 0;
+  color: var(--light-blue);
+  margin-top: 5px;
+}
+.email-status p {
+  margin: 0 0 12px;
+}
+.password-strength {
+  font-size: 10px !important;
+  min-height: 36px;
+}
+.verification-actions p {
+  font-size: 11px;
+}
+.verification-actions .secondary-button {
+  margin: 14px 0;
+}
+.verification-notice {
+  padding-block: 20px;
+}
+.change-email {
+  max-width: 500px;
+  border-top: 1px solid var(--line);
+  padding-top: 30px;
+  margin-top: 30px;
+}
+.change-email h2 {
+  font-size: 20px;
+  font-weight: 500;
+}
+.change-email p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--color-muted);
+  margin-top: 14px;
+}
+.auth-forgot {
+  display: inline-block;
+  font-size: 11px;
+  margin-top: 18px;
+  color: var(--light-blue);
+}
+[data-theme='dark'] .email-scene {
+  background-color: oklch(0.18 0.05 250);
+  background-image: none;
+}
+@media (max-width: 760px) {
+  .email-scene {
+    width: calc(100% - 32px);
+    min-height: 650px;
+    padding: 26px 14px;
+  }
+  .email-card {
+    padding: 27px 22px;
+  }
+  .email-card h1 {
+    font-size: 27px;
+  }
+  .change-email {
+    padding-top: 25px;
+  }
+  .email-card label {
+    font-size: 12px;
+  }
+}

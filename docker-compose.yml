@@ -1,0 +1,63 @@
+services:
+  helious:
+    build: .
+    image: helious:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3000:3000'
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      MONGO_URI: mongodb://mongo:27017/helious?replicaSet=rs0
+      HELIOUS_MASTER_KEY: ${HELIOUS_MASTER_KEY:?Set HELIOUS_MASTER_KEY in .env}
+      HELIOUS_MASTER_KEY_ID: ${HELIOUS_MASTER_KEY_ID:-v1}
+      HELIOUS_PREVIOUS_MASTER_KEYS: ${HELIOUS_PREVIOUS_MASTER_KEYS:-}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY in .env}
+      EMAIL_FROM: ${EMAIL_FROM:?Set EMAIL_FROM to a verified sender}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+      - email_egress
+  mongo:
+    image: mongo:7.0
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--quiet',
+          '--eval',
+          'try { rs.status() } catch (e) { if (e.code === 94) rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}); else throw e; } quit(db.hello().isWritablePrimary ? 0 : 1)',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+volumes:
+  mongo_data:
+  mongo_config:
+networks:
+  email_egress:
+  backend:
+    internal: true

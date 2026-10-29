@@ -1,0 +1,16 @@
+{
+  "name": "@helious/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev --host 127.0.0.1 --port 5175",
+    "build": "vitepress build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "typescript": "^5.9.3",
+    "@types/node": "^22.19.0"
+  }
+}

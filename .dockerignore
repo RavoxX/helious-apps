@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+**/.vitepress/cache
+**/.vitepress/dist
+.git
+.env
+.cache
+.local
+test-results
+playwright-report

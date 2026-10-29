@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "apps/server/test/**/*.ts",
+    "packages/core/test/**/*.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
+}

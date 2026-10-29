@@ -1,0 +1,33 @@
+:root {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.72 0.025 245) oklch(1 0 0);
+}
+:root.dark {
+  --vp-c-bg: oklch(0.12 0 0);
+  --vp-c-bg-alt: oklch(0.16 0 0);
+  --vp-c-bg-elv: oklch(0.19 0 0);
+  --vp-c-bg-soft: oklch(0.18 0 0);
+  scrollbar-color: oklch(0.4 0.025 245) oklch(0.17 0.01 250);
+}
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--vp-c-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.72 0.025 245);
+  border: 3px solid var(--vp-c-bg);
+  border-radius: 12px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.57 0.045 245);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.4 0.025 245);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.04 245);
+}

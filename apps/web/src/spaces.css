@@ -1,0 +1,344 @@
+.vault-management {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 24px;
+  margin: 8px 0 20px;
+}
+.spaces-manager,
+.deleted-notes {
+  min-width: 0;
+  font-size: 13px;
+}
+.spaces-manager[open],
+.deleted-notes[open] {
+  flex-basis: 100%;
+}
+.spaces-manager > summary,
+.deleted-notes > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  color: var(--color-muted);
+}
+.spaces-manager > summary > svg,
+.deleted-notes > summary > svg {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 7px;
+  color: var(--light-blue);
+}
+.spaces-manager > p,
+.deleted-notes > p {
+  max-width: 72ch;
+  color: var(--color-muted);
+  font-size: 13px;
+  margin: 12px 0 22px;
+}
+.space-policy-row {
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding: 24px 0;
+  max-width: 720px;
+}
+.space-policy-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.space-policy-identity > svg {
+  color: var(--light-blue);
+}
+.space-policy-identity strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+.space-policy-identity span {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.space-policy-row label,
+.space-create label {
+  font-size: 12px;
+}
+.space-policy-row select,
+.note-space-label select {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+}
+.space-policy-row input,
+.space-policy-row select {
+  max-width: 400px;
+}
+.space-policy-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.space-policy-actions .secondary-button {
+  margin-top: 16px;
+}
+.space-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 60ch;
+  line-height: 1.7;
+}
+.space-confirm input {
+  display: inline;
+  width: 17px;
+  min-height: 17px;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.space-delete-confirm {
+  margin-top: 14px;
+}
+.space-delete-confirm p {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.space-create {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  max-width: 720px;
+  padding: 24px 0;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+.space-create > label {
+  margin: 0;
+  flex: 1;
+}
+.space-create .secondary-button {
+  margin: 0;
+  min-height: 46px;
+}
+.space-policy-row > [role='status'] {
+  color: var(--light-blue);
+  margin-top: 14px;
+  font-size: 12px;
+}
+.note-space-label {
+  padding: 0 24px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-muted);
+}
+.note-space-label select {
+  width: auto;
+  margin: 0;
+  min-width: 135px;
+}
+.note-space-label span,
+.note-create-space {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.note-create-space {
+  margin-top: 7px;
+}
+.note-history {
+  padding: 24px;
+  border-top: 1px solid var(--line);
+  background: var(--color-panel);
+}
+.note-history > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.note-history h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.note-history > p {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.note-history select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  margin-top: 8px;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.note-history button {
+  min-height: 36px;
+}
+.history-pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.history-pagination span {
+  margin-right: auto;
+}
+.history-pagination button {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+.note-history .history-provenance {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.history-diff-label {
+  font-size: 11px;
+  color: var(--color-muted);
+  padding: 15px 0 9px;
+}
+.history-diff {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 15px 0;
+  background: var(--color-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font:
+    12px/1.8 Consolas,
+    ui-monospace,
+    monospace;
+  tab-size: 4;
+}
+.history-diff > span {
+  display: block;
+  padding-inline: 12px;
+  min-width: max-content;
+}
+.history-diff > span > span {
+  display: block;
+}
+.history-diff .diff-added {
+  color: oklch(0.84 0.12 155);
+  background: oklch(0.24 0.035 155);
+}
+.history-diff .diff-removed {
+  color: oklch(0.85 0.1 25);
+  background: oklch(0.25 0.035 25);
+}
+[data-theme='light'] .history-diff .diff-added {
+  color: oklch(0.35 0.09 155);
+  background: oklch(0.96 0.025 155);
+}
+[data-theme='light'] .history-diff .diff-removed {
+  color: oklch(0.4 0.14 25);
+  background: oklch(0.96 0.025 25);
+}
+.history-source {
+  margin-top: 18px;
+  font-size: 12px;
+}
+.history-source summary {
+  padding: 8px 0;
+  cursor: pointer;
+}
+.history-source textarea {
+  width: 100%;
+  min-height: 240px;
+  margin-top: 8px;
+  padding: 12px;
+  resize: vertical;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font:
+    12px/1.8 Consolas,
+    ui-monospace,
+    monospace;
+}
+.history-restore-confirm {
+  margin-top: 20px;
+}
+.history-restore-confirm p {
+  font-size: 12px;
+}
+.history-restore-confirm .subtle-button {
+  margin-left: 20px;
+}
+.history-notice {
+  padding: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.deleted-notes ul {
+  padding: 0;
+  list-style: none;
+  max-width: 720px;
+}
+.deleted-notes li > button {
+  width: 100%;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.deleted-notes .note-history {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+@media (max-width: 760px) {
+  .space-policy-identity span {
+    flex-basis: 100%;
+    margin-left: 26px;
+  }
+  .space-create {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .note-space-label {
+    padding: 0 14px 14px;
+  }
+  .note-history {
+    padding: 18px 14px;
+  }
+  .note-history h3 {
+    font-size: 15px;
+  }
+  .history-diff {
+    font-size: 11px;
+  }
+  .history-restore-confirm .subtle-button {
+    margin-left: 12px;
+  }
+}
