@@ -42,11 +42,7 @@ fn native_navigation_settings_and_local_save_are_functional() {
     harness.step();
     assert!(harness.state().page == Page::Account);
     assert_eq!(harness.state().origin, "https://helious.work");
-    harness
-        .get_all_by_label("Settings")
-        .first()
-        .unwrap()
-        .click();
+    harness.get_all_by_label("Settings").next().unwrap().click();
     harness.step();
     assert!(harness.state().page == Page::Settings);
     harness.state_mut().theme = "light".into();

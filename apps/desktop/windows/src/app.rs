@@ -266,6 +266,9 @@ impl HeliousApp {
             .insert(egui::TextStyle::Body, egui::FontId::proportional(15.0));
         style
             .text_styles
+            .insert(egui::TextStyle::Heading, egui::FontId::proportional(25.0));
+        style
+            .text_styles
             .insert(egui::TextStyle::Button, egui::FontId::proportional(14.0));
         if style.visuals.dark_mode {
             style.visuals.panel_fill = Color32::from_rgb(16, 16, 16);
@@ -460,6 +463,7 @@ impl eframe::App for HeliousApp {
         self.receive();
         let ctx = ui.ctx().clone();
         self.apply_theme(&ctx);
+        ui.set_style(ctx.global_style());
         if self.installing && !self.dirty() {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
@@ -632,9 +636,20 @@ impl eframe::App for HeliousApp {
                         self.select_note(&id);
                     }
                 }
-                Page::Account => self.account(ui),
-                Page::Settings => self.settings(ui),
-                Page::Sync => self.sync(ui),
+                Page::Account | Page::Settings | Page::Sync => {
+                    egui::ScrollArea::vertical()
+                        .id_salt("destination-page")
+                        .show(ui, |ui| {
+                            egui::Frame::new()
+                                .inner_margin(egui::Margin::symmetric(26, 12))
+                                .show(ui, |ui| match self.page {
+                                    Page::Account => self.account(ui),
+                                    Page::Settings => self.settings(ui),
+                                    Page::Sync => self.sync(ui),
+                                    _ => {}
+                                });
+                        });
+                }
             }
         });
         if self.confirm_close {
