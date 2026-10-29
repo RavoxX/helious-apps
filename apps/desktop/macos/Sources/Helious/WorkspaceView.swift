@@ -83,7 +83,7 @@ struct NoteEditorView: View {
         if let note = store.note {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {Text(note.path).font(.headline).lineLimit(1); if store.dirty {Circle().fill(Color.orange).frame(width: 6, height: 6)}; Spacer(); Button("History", systemImage: "clock.arrow.circlepath") {store.history()}; Button("Save") {store.save()}.buttonStyle(.borderedProminent).disabled(store.busy)}.padding(16)
-                HStack {Picker("View", selection: $store.mode) {ForEach(["Source", "Reading", "Split"], id: \.self) {Text($0)}}.pickerStyle(.segmented).frame(maxWidth: 280); Spacer(); Picker("Space", selection: $store.noteSpace) {ForEach(store.spaces) {Text($0.name).tag($0.id)}}.frame(maxWidth: 220)}.padding(.horizontal, 16).padding(.bottom, 12)
+                HStack {Picker("View", selection: $store.mode) {ForEach(["Source", "Reading", "Split"], id: \.self) {Text($0)}}.pickerStyle(.segmented).frame(maxWidth: 280); Spacer(); Picker("Space", selection: $store.noteSpace) {ForEach(store.spaces) {Text($0.name).tag($0.id)}}.frame(maxWidth: 220); Button("Delete", systemImage: "trash", role: .destructive) {store.confirmDelete = true}.disabled(store.dirty || store.busy)}.padding(.horizontal, 16).padding(.bottom, 12)
                 if !store.versions.isEmpty {DisclosureGroup("Version history") {
                     ScrollView {VStack(alignment: .leading) {ForEach(Array(store.versions.enumerated()), id: \.offset) {_, value in Button("Revision \(value["revision"] as? Int ?? 0) · \(value["recordedAt"] as? String ?? "")") {store.history(value["revision"] as? Int)}}}.frame(maxWidth: .infinity, alignment: .leading)}.frame(maxHeight: 140)
                     if !store.historical.isEmpty {ScrollView {Text(store.historical).font(.system(.body, design: .monospaced)).textSelection(.enabled)}.frame(maxHeight: 160); Button("Use as draft") {store.markdown = store.historical; store.versions = []; store.historical = ""}}
@@ -91,6 +91,10 @@ struct NoteEditorView: View {
                 Divider()
                 if store.mode == "Split" {HSplitView {source; preview}} else if store.mode == "Reading" {preview} else {source}
             }
+            .confirmationDialog("Delete this note?", isPresented: $store.confirmDelete, titleVisibility: .visible) {
+                Button("Delete note", role: .destructive) {store.deleteNote()}
+                Button("Cancel", role: .cancel) {}
+            } message: {Text("Remove \(note.path)? Saved history is retained. A paired vault will sync this deletion.")}
         } else {ContentUnavailableView("Start with a note.", systemImage: "doc.text", description: Text("Choose a file from the explorer, or create one."))}
     }
     var source: some View {NativeTextEditor(text: $store.markdown, fontSize: store.fontSize, wrap: store.wrap).padding(12).disabled(store.busy)}

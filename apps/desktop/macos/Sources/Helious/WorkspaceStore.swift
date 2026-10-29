@@ -11,17 +11,43 @@ enum Destination: String, CaseIterable, Identifiable {
     let cloud = "https://helious.work"
     let dataFolder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("com.helious.desktop", isDirectory: true)
     @Published var destination: Destination? = .workspace
-    @Published var recent: [Vault] = [], cloudVaults: [Vault] = [], spaces: [Space] = [], notes: [Note] = []
-    @Published var vault: Vault?, note: Note?
-    @Published var source = "local", markdown = "", saved = "", noteSpace = "", search = "", mode = "Source"
-    @Published var user: [String: Any] = [:], origin = "https://helious.work", customServer = false
-    @Published var email = "", password = "", factor = ""
-    @Published var error = "", message = "", busy = false
-    @Published var appearance = "dark", fontSize = 16.0, wrap = true
-    @Published var showNewNote = false, newPath = "", showDraftAlert = false, confirmDelete = false
-    @Published var graphData: [String: Any] = [:], versions: [[String: Any]] = [], historical = ""
+    @Published var recent: [Vault] = []
+    @Published var cloudVaults: [Vault] = []
+    @Published var spaces: [Space] = []
+    @Published var notes: [Note] = []
+    @Published var vault: Vault?
+    @Published var note: Note?
+    @Published var source = "local"
+    @Published var markdown = ""
+    @Published var saved = ""
+    @Published var noteSpace = ""
+    @Published var search = ""
+    @Published var mode = "Source"
+    @Published var user: [String: Any] = [:]
+    @Published var origin = "https://helious.work"
+    @Published var customServer = false
+    @Published var email = ""
+    @Published var password = ""
+    @Published var factor = ""
+    @Published var error = ""
+    @Published var message = ""
+    @Published var busy = false
+    @Published var appearance = "dark"
+    @Published var fontSize = 16.0
+    @Published var wrap = true
+    @Published var showNewNote = false
+    @Published var newPath = ""
+    @Published var showDraftAlert = false
+    @Published var confirmDelete = false
+    @Published var graphData: [String: Any] = [:]
+    @Published var versions: [[String: Any]] = []
+    @Published var historical = ""
     @Published var graphRevision = 0
-    @Published var syncConfig: [String: Any] = [:], syncVault = "", remoteSpaces: [Space] = [], mappings: [String: String] = [:], personalConfirmed = false
+    @Published var syncConfig: [String: Any] = [:]
+    @Published var syncVault = ""
+    @Published var remoteSpaces: [Space] = []
+    @Published var mappings: [String: String] = [:]
+    @Published var personalConfirmed = false
     var deferred: (() -> Void)?
     var dirty: Bool {note != nil && (markdown != saved || noteSpace != note?.spaceId)}
     var colorScheme: ColorScheme? {appearance == "system" ? nil : appearance == "light" ? .light : .dark}
@@ -94,6 +120,7 @@ enum Destination: String, CaseIterable, Identifiable {
     func select(_ id: String) {guardDraft { [weak self] in self?.read(id)}}
     func save() {guard let note else {return}; var value = scope("save_note"); value["id"] = note.id; value["body"] = ["path": note.path, "markdown": markdown, "spaceId": noteSpace, "revision": note.revision ?? 1, "hash": note.hash ?? ""]; send("save_note", value)}
     func createNote() {guard !dirty else {error = "Save your current draft before creating a note."; return}; var value = scope("create_note"); value["body"] = ["path": newPath.hasSuffix(".md") ? newPath : newPath + ".md", "markdown": "", "spaceId": spaces.first(where: {$0.kind == "personal"})?.id ?? ""]; send("create_note", value)}
+    func deleteNote() {guard let note, !dirty else {return}; var value = scope("delete_note"); value["id"] = note.id; value["body"] = ["path": note.path, "hash": note.hash ?? "", "revision": note.revision ?? 1]; send("delete_note", value)}
     func login() {let request: [String: Any] = ["operation": "login", "origin": customServer ? origin : cloud, "email": email, "password": password, "code": factor]; if !customServer {origin = cloud}; send("login", request); password = ""; factor = ""}
     func openWeb(_ path: String) {guard let url = URL(string: origin + path), ["https", "http"].contains(url.scheme ?? ""), url.user == nil, url.password == nil else {return}; NSWorkspace.shared.open(url)}
     func settingsSave() {send("settings", ["operation": "settings", "settings": ["theme": appearance, "fontSize": Int(fontSize), "wrap": wrap]])}

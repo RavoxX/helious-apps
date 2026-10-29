@@ -42,12 +42,14 @@ impl HeliousApp {
         egui::CentralPanel::default().show(ui,|ui|{
             if self.note.is_null(){ui.add_space(90.0);ui.vertical_centered(|ui|{ui.heading("Start with a note.");ui.label("Choose a file from the explorer, or create one.");});return;}
             ui.horizontal(|ui|{ui.label(RichText::new(string(&self.note,"path")).size(19.0).strong());if self.dirty(){ui.weak("Unsaved");}
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{if ui.add_enabled(self.pending.is_none(),egui::Button::new("Save  Ctrl+S")).clicked(){self.save();}if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=self.note["id"].clone();self.request("history",req);}});
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{if ui.add_enabled(self.pending.is_none(),egui::Button::new("Save  Ctrl+S")).clicked(){self.save();}
+if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=self.note["id"].clone();self.request("history",req);}});
             });ui.add_space(8.0);
             ui.horizontal(|ui|{for (i,label) in ["Source","Reading","Split"].iter().enumerate(){if ui.selectable_label(self.mode==i as u8,*label).clicked(){self.mode=i as u8;}}
                 ui.separator();egui::ComboBox::from_id_salt("note-space").selected_text(self.spaces.iter().find(|s|s["id"]==self.space).map(|s|string(s,"name")).unwrap_or("Space")).show_ui(ui,|ui|{for s in &self.spaces{ui.selectable_value(&mut self.space,string(s,"id").to_string(),string(s,"name"));}});
                 if ui.small_button("Reload saved").clicked(){if self.dirty(){self.error="Save or copy your draft before reloading. Discard it explicitly below if it is no longer needed.".into();}else{let id=string(&self.note,"id").to_string();self.select_note(&id);}}
                 if self.dirty()&&ui.small_button("Discard draft").clicked(){self.pending_navigation=None;self.pending_quit=false;self.confirm_close=true;}
+                if ui.add_enabled(!self.dirty()&&self.pending.is_none(),egui::Button::new("Delete note")).on_hover_text("Delete the saved note after confirmation. Save or discard your draft first.").clicked(){self.confirm_delete=true;}
             });ui.separator();
             if !self.history.is_null(){egui::CollapsingHeader::new("Version history").default_open(true).show(ui,|ui|{
                 egui::ScrollArea::vertical().max_height(160.0).show(ui,|ui|{for version in self.history["versions"].as_array().cloned().unwrap_or_default().iter().take(50){if ui.button(format!("Revision {} · {}",version["revision"],string(version,"recordedAt"))).clicked(){let mut req=self.scope("history");req["id"]=self.note["id"].clone();req["revision"]=version["revision"].clone();self.request("version",req);}}});
@@ -124,7 +126,8 @@ impl HeliousApp {
         ui.label("Sign in to access server vaults. Your local folders stay available offline.");
         ui.add_space(22.0);
         ui.scope(|ui|{ui.set_max_width(430.0);
-            ui.horizontal(|ui|{if ui.selectable_label(!self.custom_server,"Helious Cloud").clicked(){self.custom_server=false;self.origin=helious_native::CLOUD_ORIGIN.into();}if ui.selectable_label(self.custom_server,"Self-hosted server").clicked(){self.custom_server=true;}});
+            ui.horizontal(|ui|{if ui.selectable_label(!self.custom_server,"Helious Cloud").clicked(){self.custom_server=false;self.origin=helious_native::CLOUD_ORIGIN.into();}
+if ui.selectable_label(self.custom_server,"Self-hosted server").clicked(){self.custom_server=true;}});
             ui.add_space(14.0);if self.custom_server{ui.label("Server address");ui.add(egui::TextEdit::singleline(&mut self.origin).hint_text("https://your-server.example").desired_width(f32::INFINITY));}else{ui.weak("helious.work · connection required");}
             ui.label("Email address");ui.add(egui::TextEdit::singleline(&mut self.email).hint_text("you@example.com").desired_width(f32::INFINITY));
             ui.label("Password");ui.add(egui::TextEdit::singleline(&mut self.password).password(!self.show_password).desired_width(f32::INFINITY));ui.checkbox(&mut self.show_password,"Show password");
@@ -132,7 +135,8 @@ impl HeliousApp {
             if ui.add_enabled(self.pending.is_none()&&!self.email.is_empty()&&!self.password.is_empty(),egui::Button::new(if self.pending.as_deref()==Some("login"){ "Signing in…" }else{"Sign in"})).clicked(){
                 self.request("login",json!({"operation":"login","origin":self.origin,"email":self.email,"password":self.password,"code":self.factor}));self.password.clear();self.factor.clear();
             }
-            ui.add_space(12.0);ui.horizontal(|ui|{if ui.link("Create account").clicked(){if let Ok(origin)=helious_native::remote::origin(&self.origin){let _=open::that(format!("{}/app/",origin));}}if ui.link("Forgot password?").clicked(){if let Ok(origin)=helious_native::remote::origin(&self.origin){let _=open::that(format!("{}/forgot-password",origin));}}});
+            ui.add_space(12.0);ui.horizontal(|ui|{if ui.link("Create account").clicked(){if let Ok(origin)=helious_native::remote::origin(&self.origin){let _=open::that(format!("{}/app/",origin));}}
+if ui.link("Forgot password?").clicked(){if let Ok(origin)=helious_native::remote::origin(&self.origin){let _=open::that(format!("{}/forgot-password",origin));}}});
             ui.add_space(24.0);ui.weak("Sessions are kept in Windows Credential Manager. Your password is never saved. If Cloud is unavailable, open a local vault from the sidebar.");
         });
     }
@@ -144,7 +148,9 @@ impl HeliousApp {
             ui.add_space(20.0);ui.heading("Editor");self.settings_dirty|=ui.add(egui::Slider::new(&mut self.font_size,12.0..=28.0).text("Text size").step_by(1.0)).changed();self.settings_dirty|=ui.checkbox(&mut self.wrap,"Wrap long lines").changed();
             ui.add_space(20.0);ui.heading("Updates");self.settings_dirty|=ui.checkbox(&mut self.automatic_checks,"Check GitHub for updates automatically").changed();self.settings_dirty|=ui.checkbox(&mut self.automatic_install,"Download and install automatically when no draft is open").changed();
             ui.label("Updates come from RavoxX/helious-apps and must pass signature and checksum verification.");
-            ui.horizontal(|ui|{if ui.add_enabled(self.pending.is_none(),egui::Button::new("Check for updates")).clicked(){self.request("check_update",json!({"operation":"check_update"}));}if self.update["available"]==true&&!self.update_ready&&ui.add_enabled(self.pending.is_none(),egui::Button::new("Download update")).clicked(){self.request("download_update",json!({"operation":"download_update"}));}if self.update_ready&&ui.add_enabled(self.pending.is_none()&&!self.dirty(),egui::Button::new("Update and restart")).clicked(){self.request("install_update",json!({"operation":"install_update"}));}});
+            ui.horizontal(|ui|{if ui.add_enabled(self.pending.is_none(),egui::Button::new("Check for updates")).clicked(){self.request("check_update",json!({"operation":"check_update"}));}
+if self.update["available"]==true&&!self.update_ready&&ui.add_enabled(self.pending.is_none(),egui::Button::new("Download update")).clicked(){self.request("download_update",json!({"operation":"download_update"}));}
+if self.update_ready&&ui.add_enabled(self.pending.is_none()&&!self.dirty(),egui::Button::new("Update and restart")).clicked(){self.request("install_update",json!({"operation":"install_update"}));}});
             if self.update_ready&&self.dirty(){ui.weak("Save your current draft before installing.");}
             ui.add_space(15.0);if ui.add_enabled(self.settings_dirty&&self.pending.is_none(),egui::Button::new("Save settings")).clicked(){self.request("settings",json!({"operation":"settings","settings":{"theme":self.theme,"fontSize":self.font_size as u64,"wrap":self.wrap,"automaticChecks":self.automatic_checks,"automaticInstall":self.automatic_install}}));}
             ui.add_space(28.0);ui.heading("Storage");ui.label("Local vaults contain plain Markdown and a .helious folder for history and sync checkpoints. Back up both.");ui.weak(self.data_folder.to_string_lossy());if ui.button("Open desktop settings folder").clicked(){let _=open::that(&self.data_folder);}

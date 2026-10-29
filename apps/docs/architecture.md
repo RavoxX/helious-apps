@@ -4,14 +4,14 @@
 
 One Node.js 22/Fastify container serves the React panel, VitePress docs and REST API from one origin. MongoDB 7 holds durable state; MCP HTTP shares the origin with a separate stdio bridge. The root redirects to /app/. Windows uses native Rust/egui and macOS native SwiftUI, with a shared Rust vault/session/sync engine.
 
-| Folder          | Responsibility                                                        |
-| --------------- | --------------------------------------------------------------------- |
-| `apps/server`   | Validation, authorization, persistence, static serving                |
-| `apps/web`      | React, TanStack Router/Query, Zustand, Tailwind tokens                |
-| `apps/docs`     | VitePress contributor and user documentation                          |
-| `apps/desktop`  | Tauri shell, native filesystem/watchers, HTTP and OS credential store |
-| `packages/core` | Portable Markdown parser, paths, link/graph engine, search syntax     |
-| `packages/mcp`  | Official MCP SDK, schemas, tools and stdio bridge                     |
+| Folder          | Responsibility                                                      |
+| --------------- | ------------------------------------------------------------------- |
+| `apps/server`   | Validation, authorization, persistence, static serving              |
+| `apps/web`      | React, TanStack Router/Query, Zustand, Tailwind tokens              |
+| `apps/docs`     | VitePress contributor and user documentation                        |
+| `apps/desktop`  | Native Rust/egui Windows and SwiftUI macOS apps, shared Rust engine |
+| `packages/core` | Portable Markdown parser, paths, link/graph engine, search syntax   |
+| `packages/mcp`  | Official MCP SDK, schemas, tools and stdio bridge                   |
 
 ## Data model
 
@@ -101,7 +101,7 @@ The private MCP backend reuses the knowledge REST implementation through in-proc
 
 ## Desktop transport and local storage
 
-The Tauri shell bundles the built web UI under `/app/`. A desktop-only API adapter reuses the existing workspace components and shared core parser/link/graph engine. Browser requests still use the same-origin Fetch transport; server-mode desktop requests use Rust's restricted HTTP transport. Remote documents are not loaded in the privileged webview. IPC capabilities name only the main window and specific native commands; no general filesystem plugin scope is granted.
+Windows uses an eframe/egui UI rendered by wgpu; macOS uses SwiftUI/AppKit with a narrow in-process C bridge to the shared Rust engine. Neither client loads remote documents in a privileged webview. The Windows worker thread and Swift bridge actor serialize filesystem, network and sync operations away from the UI. The browser retains its same-origin Fetch transport; native clients use the restricted Rust HTTP transport and OS credential store.
 
 Local vault metadata lives in `.helious/vault.json`; revision snapshots live under `.helious/history/<fileId>/<revision>.json`. Plain note and attachment files remain at their normal paths. Native writes use expected content hashes, staged replacements, a vault lock and a persisted multi-file recovery journal. Native watchers invalidate the frontend's parsed index; unsaved editor drafts remain in memory. Current local Space assignments are metadata, not an OS sandbox. Local activity counts imported and subsequently indexed changes from the first open onward.
 

@@ -181,6 +181,17 @@ pub fn run(engine: &mut Engine, id: &str, choice: Option<(String, String)>) -> R
             || !same(&r, &saved["remote"])
             || r["revision"] != saved["remote"]["revision"]
         {
+            // A stale choice must not leave an unresolvable checkpoint forever.
+            // Preserve existing copies; the next sync creates a fresh conflict.
+            config["base"]
+                .as_object_mut()
+                .ok_or("Invalid sync checkpoint.")?
+                .remove(&key);
+            config["conflicts"]
+                .as_object_mut()
+                .ok_or("Invalid sync conflicts.")?
+                .remove(&key);
+            engine.local(id)?.configure(json!({"sync":config}))?;
             return Err("A copy changed after this conflict. Sync and review again.".into());
         }
         config["base"][&key] = if which == "local" {

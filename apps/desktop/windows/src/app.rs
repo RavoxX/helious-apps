@@ -652,10 +652,24 @@ impl eframe::App for HeliousApp {
                 }
             }
         });
+        if self.confirm_delete {
+            egui::Window::new("Delete this note?").collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,[0.0,0.0]).show(&ctx,|ui|{
+                ui.label(format!("Remove {} from this vault?",string(&self.note,"path")));
+                ui.label("Saved history is retained. A paired vault will sync this deletion.");
+                ui.horizontal(|ui|{
+                    if ui.button("Cancel").clicked(){self.confirm_delete=false;}
+                    if ui.add_enabled(!self.dirty()&&self.pending.is_none(),egui::Button::new("Confirm deletion")).clicked(){
+                        let mut req=self.scope("delete_note");req["id"]=self.note["id"].clone();req["body"]=json!({"path":self.note["path"],"hash":self.note["hash"],"revision":self.note["revision"]});self.request("delete_note",req);self.confirm_delete=false;
+                    }
+                });
+            });
+        }
         if self.confirm_close {
             egui::Window::new("Keep your draft").collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,[0.0,0.0]).show(&ctx,|ui|{
             ui.label("This note has unsaved changes. Save it before leaving, or discard the draft.");
-            ui.horizontal(|ui|{if ui.button("Keep editing").clicked(){self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}if ui.button("Save draft").clicked(){self.save();self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}if ui.button("Discard and continue").clicked(){self.markdown=self.saved.clone();self.space=string(&self.note,"spaceId").into();self.confirm_close=false;if self.pending_quit{ctx.send_viewport_cmd(egui::ViewportCommand::Close);}else if let Some(value)=self.pending_navigation.take(){self.perform_navigation(value);}}});
+            ui.horizontal(|ui|{if ui.button("Keep editing").clicked(){self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}
+if ui.button("Save draft").clicked(){self.save();self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}
+if ui.button("Discard and continue").clicked(){self.markdown=self.saved.clone();self.space=string(&self.note,"spaceId").into();self.confirm_close=false;if self.pending_quit{ctx.send_viewport_cmd(egui::ViewportCommand::Close);}else if let Some(value)=self.pending_navigation.take(){self.perform_navigation(value);}}});
         });
         }
     }

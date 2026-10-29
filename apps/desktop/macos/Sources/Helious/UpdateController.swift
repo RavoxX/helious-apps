@@ -2,7 +2,8 @@ import SwiftUI
 import Sparkle
 @MainActor final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     @Published var status = "Updates are downloaded from GitHub and verified before installation."
-    @Published var automaticChecks = true, automaticDownloads = false
+    @Published var automaticChecks = true
+    @Published var automaticDownloads = false
     weak var store: WorkspaceStore?
     private var feed: String?
     private var started = false

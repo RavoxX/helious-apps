@@ -4,8 +4,13 @@ struct NativeGraphView: View {
     let data: [String: Any]; let open: (String) -> Void
     @State private var points: [GraphPoint] = []
     @State private var edges: [(Int, Int)] = []
-    @State private var pan = CGSize.zero, previousPan = CGSize.zero
-    @State private var zoom = 1.0, iterations = 0, paused = false, filter = "", hover: Int?
+    @State private var pan = CGSize.zero
+    @State private var previousPan = CGSize.zero
+    @State private var zoom = 1.0
+    @State private var iterations = 0
+    @State private var paused = false
+    @State private var filter = ""
+    @State private var hover: Int?
     private let palette: [Color] = [.cyan, .purple, .mint, .orange]
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -35,7 +40,6 @@ struct NativeGraphView: View {
             }
         }.padding(22)
         .onAppear {load()}
-        .onChange(of: data["nodes"] as? [[String: String]] ?? []) {_, _ in load()}
         .onReceive(Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()) {_ in if !paused && iterations < 700 {step()}}
     }
     private func screen(_ point: CGPoint, _ size: CGSize) -> CGPoint {CGPoint(x: size.width / 2 + pan.width + point.x * zoom, y: size.height / 2 + pan.height + point.y * zoom)}
