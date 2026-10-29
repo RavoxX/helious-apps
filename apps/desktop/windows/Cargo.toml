@@ -2,6 +2,7 @@
 name = "helious-windows"
 version = "0.8.1"
 edition = "2021"
+license = "Apache-2.0"
 rust-version = "1.95"
 build = "build.rs"
 [[bin]]

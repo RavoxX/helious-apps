@@ -1,6 +1,6 @@
 # Helious Apps — agent guide
 
-Additional owner requests are queued behind the native rebuild: generic 18+ registration self-declaration (checkbox only, no identity/DOB verification), account deletion/export/correction, privacy/retention/contact safeguards. Concrete operator/address/support details and the separate-container/domain admin/support panel belong only in the private repository. Never copy its LEGAL-LAUNCH.md or PROJECT-STATUS.md into this public checkout. Do not claim the queued compliance/admin work is implemented. The owner has not selected a source license yet.
+Additional owner requests are queued behind the native rebuild: generic 18+ registration self-declaration (checkbox only, no identity/DOB verification), account deletion/export/correction, privacy/retention/contact safeguards. Concrete operator/address/support details and the separate-container/domain admin/support panel belong only in the private repository. Never copy its LEGAL-LAUNCH.md or PROJECT-STATUS.md into this public checkout. Do not claim the queued compliance/admin work is implemented. The owner selected Apache 2.0 for this public source; preserve LICENSE, NOTICE and third-party attributions.
 
 ## Repository boundaries
 

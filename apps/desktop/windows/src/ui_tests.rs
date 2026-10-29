@@ -33,7 +33,7 @@ fn native_navigation_settings_and_local_save_are_functional() {
     .unwrap();
     let mut harness = Harness::builder()
         .with_size(egui::vec2(1440.0, 940.0))
-        .with_accessibility_check(false)
+        .with_accessibility_check(true)
         .build_eframe(|cc| HeliousApp::with_folder(cc, folder.path().into()));
     harness.state_mut().next_poll = Instant::now() + Duration::from_secs(3600);
     harness.state_mut().automatic_checks = false;
@@ -83,6 +83,40 @@ fn native_navigation_settings_and_local_save_are_functional() {
             .unwrap()
             .contains("Saved by the native UI test.")
     );
+    let next = harness
+        .state()
+        .notes
+        .iter()
+        .find(|n| n["path"] == "Runbook.md")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    harness
+        .state_mut()
+        .markdown
+        .push_str("\nAn unsaved thought.");
+    harness.state_mut().select_note(&next);
+    harness.step();
+    harness.step();
+    harness.step();
+    assert!(harness.state().confirm_close);
+    assert_eq!(harness.state().note["path"], "Architecture.md");
+    harness.get_by_label("Keep editing").click();
+    harness.step();
+    assert!(harness.state().dirty());
+    harness.state_mut().save();
+    settle(&mut harness);
+    harness.get_by_label("History").click();
+    settle(&mut harness);
+    assert!(
+        harness.state().history["versions"]
+            .as_array()
+            .unwrap()
+            .len()
+            >= 2
+    );
+    harness.state_mut().history = serde_json::Value::Null;
     if let Ok(path) = std::env::var("HELIOUS_NATIVE_PREVIEW_DIR") {
         std::fs::create_dir_all(&path).unwrap();
         harness.state_mut().mode = 1;
@@ -107,4 +141,25 @@ fn native_navigation_settings_and_local_save_are_functional() {
             .save(std::path::Path::new(&path).join("windows-account.png"))
             .unwrap();
     }
+    harness.state_mut().page = Page::Workspace;
+    harness.state_mut().new_path = "Created.md".into();
+    harness.step();
+    harness.get_by_label("+").click();
+    settle(&mut harness);
+    assert!(vault.path().join("Created.md").is_file());
+    harness.get_by_label("Delete note").click();
+    harness.step();
+    harness.step();
+    harness.step();
+    assert!(vault.path().join("Created.md").is_file());
+    harness.get_by_label("Cancel").click();
+    harness.step();
+    assert!(!harness.state().confirm_delete);
+    harness.get_by_label("Delete note").click();
+    harness.step();
+    harness.step();
+    harness.step();
+    harness.get_by_label("Confirm deletion").click();
+    settle(&mut harness);
+    assert!(!vault.path().join("Created.md").exists());
 }

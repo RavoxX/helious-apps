@@ -57,7 +57,7 @@ if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=se
             });}
             let editor=|ui:&mut egui::Ui,app:&mut HeliousApp|{
                 egui::ScrollArea::both().id_salt("source-editor").show(ui,|ui|{
-                    ui.add_enabled(app.pending.as_deref()!=Some("save_note"),egui::TextEdit::multiline(&mut app.markdown).font(egui::FontId::monospace(app.font_size)).desired_width(if app.wrap{ui.available_width()}else{10000.0}).desired_rows(35).code_editor());
+                    ui.add_enabled(app.pending.as_deref()!=Some("save_note"),egui::TextEdit::multiline(&mut app.markdown).font(egui::FontId::monospace(app.font_size)).desired_width(if app.wrap{ui.available_width()}else{10000.0}).desired_rows(35).code_editor()).on_hover_text("Markdown source editor");
                 });
             };
             let preview=|ui:&mut egui::Ui,app:&mut HeliousApp|{egui::ScrollArea::vertical().id_salt("markdown-preview").show(ui,|ui|{ui.add_space(18.0);CommonMarkViewer::new().show(ui,&mut app.markdown_cache,&helious_native::knowledge::mask_secrets(&app.markdown));});};
@@ -128,10 +128,10 @@ if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=se
         ui.scope(|ui|{ui.set_max_width(430.0);
             ui.horizontal(|ui|{if ui.selectable_label(!self.custom_server,"Helious Cloud").clicked(){self.custom_server=false;self.origin=helious_native::CLOUD_ORIGIN.into();}
 if ui.selectable_label(self.custom_server,"Self-hosted server").clicked(){self.custom_server=true;}});
-            ui.add_space(14.0);if self.custom_server{ui.label("Server address");ui.add(egui::TextEdit::singleline(&mut self.origin).hint_text("https://your-server.example").desired_width(f32::INFINITY));}else{ui.weak("helious.work · connection required");}
-            ui.label("Email address");ui.add(egui::TextEdit::singleline(&mut self.email).hint_text("you@example.com").desired_width(f32::INFINITY));
-            ui.label("Password");ui.add(egui::TextEdit::singleline(&mut self.password).password(!self.show_password).desired_width(f32::INFINITY));ui.checkbox(&mut self.show_password,"Show password");
-            ui.label("Authenticator or recovery code (if enabled)");ui.add(egui::TextEdit::singleline(&mut self.factor).desired_width(f32::INFINITY));ui.add_space(12.0);
+            ui.add_space(14.0);if self.custom_server{let label=ui.label("Server address");ui.add(egui::TextEdit::singleline(&mut self.origin).hint_text("https://your-server.example").desired_width(f32::INFINITY)).labelled_by(label.id);}else{ui.weak("helious.work · connection required");}
+            let label=ui.label("Email address");ui.add(egui::TextEdit::singleline(&mut self.email).hint_text("you@example.com").desired_width(f32::INFINITY)).labelled_by(label.id);
+            let label=ui.label("Password");ui.add(egui::TextEdit::singleline(&mut self.password).password(!self.show_password).desired_width(f32::INFINITY)).labelled_by(label.id);ui.checkbox(&mut self.show_password,"Show password");
+            let label=ui.label("Authenticator or recovery code (if enabled)");ui.add(egui::TextEdit::singleline(&mut self.factor).desired_width(f32::INFINITY)).labelled_by(label.id);ui.add_space(12.0);
             if ui.add_enabled(self.pending.is_none()&&!self.email.is_empty()&&!self.password.is_empty(),egui::Button::new(if self.pending.as_deref()==Some("login"){ "Signing in…" }else{"Sign in"})).clicked(){
                 self.request("login",json!({"operation":"login","origin":self.origin,"email":self.email,"password":self.password,"code":self.factor}));self.password.clear();self.factor.clear();
             }

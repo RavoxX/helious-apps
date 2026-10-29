@@ -11,6 +11,8 @@ mod remote_tests;
 #[cfg(test)]
 mod service_tests;
 #[cfg(test)]
+mod sync_tests;
+#[cfg(test)]
 mod updater_tests;
 #[cfg(test)]
 mod vault_tests;

@@ -2,6 +2,21 @@ use crate::updater::*;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use ed25519_dalek::{Signer, SigningKey};
 use serde_json::json;
+#[test]
+fn accepts_the_node_release_signer_format_and_exact_newline_bytes() {
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../tests/fixtures/node-update.json")).unwrap();
+    let body = fixture["body"].as_str().unwrap();
+    let signature = fixture["signature"].as_str().unwrap();
+    let key = fixture["publicKey"].as_str().unwrap();
+    assert_eq!(
+        verify_manifest(body.as_bytes(), signature, key, "0.8.1")
+            .unwrap()
+            .version,
+        "0.8.2"
+    );
+    assert!(verify_manifest(body.trim_end().as_bytes(), signature, key, "0.8.1").is_err());
+}
 fn signed(version: &str) -> (Vec<u8>, String, String) {
     let key = SigningKey::from_bytes(&[7; 32]);
     let asset = |name: &str| json!({"url":format!("https://github.com/{}/releases/download/v{}/Helious_{}_{}",REPOSITORY,version,version,name),"sha256":"a".repeat(64),"size":123});

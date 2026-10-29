@@ -1,6 +1,6 @@
 use crate::vault::Result;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -100,7 +100,7 @@ pub fn verify_manifest(
     let payload = [b"helious-update-v1\n".as_slice(), bytes].concat();
     VerifyingKey::from_bytes(&key)
         .map_err(|_| "Invalid update verification key.")?
-        .verify(&payload, &signature)
+        .verify_strict(&payload, &signature)
         .map_err(|_| "Update signature verification failed. Nothing was installed.")?;
     let manifest: Manifest =
         serde_json::from_slice(bytes).map_err(|_| "Invalid update manifest.")?;

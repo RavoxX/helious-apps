@@ -7,7 +7,7 @@ Public application and self-hosting source for Helious. The marketing website an
 - Server: Fastify, MongoDB, cookie authentication, scoped MCP and a browser workspace.
 - Cloud sign-in defaults to https://helious.work; that hosted service is not live yet. Local folders work offline, and self-hosting works independently.
 
-Read [AGENTS.md](AGENTS.md), [desktop setup](apps/docs/desktop.md), [Docker installation](apps/docs/deployment.md) and [security guidance](SECURITY.md). Native desktop rebuilding and automatic updating are in progress. No marketing homepage is shipped: the server redirects / to /app/.
+Read [AGENTS.md](AGENTS.md), [desktop setup](apps/docs/desktop.md), [Docker installation](apps/docs/deployment.md) and [security guidance](SECURITY.md). Native desktop previews are built by GitHub Actions; see the desktop guide for feature differences from the browser. No marketing homepage is shipped: the server redirects / to /app/.
 
 ## Self-host with Docker Compose
 
@@ -76,3 +76,7 @@ docker compose start helious
 Encrypt backups and store a copy off-host. Test restoring to an isolated instance with the matching keys before relying on a backup. For upgrades, back up first, read migration notes, then run `git pull --ff-only` and `docker compose up --build -d` with the **same** volumes, Compose project name and keys. Detailed [backup/restore and upgrade instructions](apps/docs/deployment.md) include recovery precautions.
 
 If startup fails, check the app/container logs and `/api/health`: missing master key/email settings, an unverified sender, or a MongoDB replica set that is not writable are common causes. Never paste secrets or email links into public issues. This source distribution does not configure your host's DNS, TLS, mail domain, backups or operator policies automatically.
+
+## License
+
+Helious Apps source is licensed under [Apache 2.0](LICENSE). You may self-host, modify and redistribute it under that license. Preserve the applicable license and notices when redistributing. Third-party libraries/fonts retain their own licenses; native installers include their notices. The Helious name/logo are not licensed as trademarks. The private marketing website and admin/operator materials are outside this repository.

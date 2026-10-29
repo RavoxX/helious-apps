@@ -65,7 +65,7 @@ fn client() -> Result<Client> {
     Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(45))
-        .user_agent("Helious-Desktop/0.8.0")
+        .user_agent(concat!("Helious-Desktop/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|_| "Cannot initialize the secure connection.".into())
 }

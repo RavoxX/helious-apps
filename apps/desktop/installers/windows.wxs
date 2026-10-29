@@ -10,6 +10,7 @@
       <Directory Id="LocalAppDataFolder"><Directory Id="Programs" Name="Programs"><Directory Id="INSTALLFOLDER" Name="Helious">
         <Component Id="Application" Guid="26A66E2E-AD47-4A8D-8F08-E50D1207976E" Win64="yes">
           <File Id="HeliousExe" Source="$(var.AppExe)" KeyPath="yes"/>
+          <File Id="Notices" Source="$(var.Notices)" Name="THIRD-PARTY-NOTICES.txt"/>
         </Component>
       </Directory></Directory></Directory>
       <Directory Id="ProgramMenuFolder"><Component Id="StartShortcut" Guid="4CEE0783-927E-4CF9-9D11-F0EC85CE6620" Win64="yes">

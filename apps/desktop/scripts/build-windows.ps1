@@ -7,6 +7,9 @@ if (-not $SkipRustBuild) {
   if ($LASTEXITCODE -ne 0) { throw 'Native Windows build failed.' }
 }
 $appExe = Join-Path $desktopRoot 'target/release/Helious.exe'
+& node (Join-Path $PSScriptRoot 'notices.mjs') 'x86_64-pc-windows-msvc'
+if ($LASTEXITCODE -ne 0) { throw 'Dependency license collection failed.' }
+$notices = Join-Path $desktopRoot 'target/THIRD-PARTY-NOTICES.txt'
 $bundle = Join-Path $desktopRoot 'target/installers'
 New-Item -ItemType Directory -Force -Path $bundle | Out-Null
 $nsis = Get-Command makensis.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1
@@ -25,9 +28,9 @@ if (-not $candle) {
 if (-not $candle -or -not $light) { throw 'Install WiX Toolset 3.14 and put candle.exe/light.exe on PATH.' }
 Push-Location (Join-Path $desktopRoot 'installers')
 try {
-  & $nsis "/DVERSION=$version" "/DOUTFILE=$bundle\Helious_${version}_x64-setup.exe" "/DAPP_EXE=$appExe" 'windows.nsi'
+  & $nsis "/DVERSION=$version" "/DOUTFILE=$bundle\Helious_${version}_x64-setup.exe" "/DAPP_EXE=$appExe" "/DNOTICES=$notices" 'windows.nsi'
   if ($LASTEXITCODE -ne 0) { throw 'NSIS packaging failed.' }
-  & $candle '-arch' 'x64' "-dVersion=$version" "-dAppExe=$appExe" "-dAppIcon=$desktopRoot\assets\icons\icon.ico" '-out' "$bundle\windows.wixobj" 'windows.wxs'
+  & $candle '-arch' 'x64' "-dVersion=$version" "-dAppExe=$appExe" "-dNotices=$notices" "-dAppIcon=$desktopRoot\assets\icons\icon.ico" '-out' "$bundle\windows.wixobj" 'windows.wxs'
   if ($LASTEXITCODE -ne 0) { throw 'WiX compilation failed.' }
   & $light '-sval' '-out' "$bundle\Helious_${version}_x64_en-US.msi" "$bundle\windows.wixobj"
   if ($LASTEXITCODE -ne 0) { throw 'MSI packaging failed.' }

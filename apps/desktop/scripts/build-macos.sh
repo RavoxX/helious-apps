@@ -20,6 +20,8 @@ sparkle="$(find "$desktop_root/macos/.build/artifacts" -type d -name Sparkle.fra
 if [ -z "$sparkle" ]; then echo 'Sparkle framework missing from SwiftPM artifacts' >&2; exit 1; fi
 ditto "$sparkle" "$app/Contents/Frameworks/Sparkle.framework"
 cp "$desktop_root/assets/icons/icon.icns" "$app/Contents/Resources/Helious.icns"
+node "$desktop_root/scripts/notices.mjs" aarch64-apple-darwin
+cp "$desktop_root/target/THIRD-PARTY-NOTICES.txt" "$app/Contents/Resources/THIRD-PARTY-NOTICES.txt"
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

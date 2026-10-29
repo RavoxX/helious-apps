@@ -278,6 +278,7 @@ impl HeliousApp {
             style.visuals.widgets.noninteractive.bg_stroke.color = Color32::from_gray(48);
             style.visuals.selection.bg_fill = Color32::from_rgb(29, 70, 110);
             style.visuals.hyperlink_color = Color32::from_rgb(115, 185, 255);
+            style.visuals.weak_text_color = Some(Color32::from_gray(164));
         }
         ctx.set_global_style(style);
     }

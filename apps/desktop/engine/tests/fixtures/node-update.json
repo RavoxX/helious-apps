@@ -1,0 +1,5 @@
+{
+  "body": "{\"schema\":1,\"version\":\"0.8.2\",\"notes\":\"Node signer compatibility fixture\",\"windows\":{\"url\":\"https://github.com/RavoxX/helious-apps/releases/download/v0.8.2/Helious_0.8.2_x64-setup.exe\",\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":123},\"macos\":{\"url\":\"https://github.com/RavoxX/helious-apps/releases/download/v0.8.2/Helious_0.8.2_universal.zip\",\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"size\":123}}\n",
+  "publicKey": "6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=",
+  "signature": "Ez3eF1tz+fWEXW40htEd2X3HBRf01dJlMOg69qFFy0ky1Hz/FGRBP2U2GCStQvZh9o1GN0WF9nvHqoBnuD6MAA=="
+}

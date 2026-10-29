@@ -1,0 +1,9 @@
+Helious Apps
+Copyright 2026 Helious contributors
+
+Helious application source in this repository is licensed under the Apache License, Version 2.0.
+Third-party components retain their respective licenses and notices. Native distributions
+include THIRD-PARTY-NOTICES.txt; dependency manifests identify the web/server dependencies.
+
+The Helious name and logo are not granted as trademarks by this license.
+Marketing website assets and private operator/admin materials are not part of this repository.
