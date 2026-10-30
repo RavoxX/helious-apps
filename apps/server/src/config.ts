@@ -24,6 +24,19 @@ const schema = z.object({
   HELIOUS_PREVIOUS_MASTER_KEYS: z.string().max(2048).default(''),
   COOKIE_SECURE: booleanString.optional(),
   REGISTRATION_OPEN: booleanString.default(true),
+  REGISTRATION_MIN_AGE: z.coerce
+    .number()
+    .refine((value) => value === 0 || value === 18)
+    .default(18),
+  TERMS_VERSION: z.string().trim().max(80).default(''),
+  TERMS_URL: z.string().trim().max(2048).default(''),
+  PRIVACY_URL: z.string().trim().max(2048).default(''),
+  ACCOUNT_EXPORT_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1048576)
+    .max(10737418240)
+    .default(1073741824),
   TRUST_PROXY: z.string().default(''),
   RESEND_API_KEY: z.string().trim().default(''),
   EMAIL_FROM: z.string().trim().default('Helious <onboarding@resend.dev>'),
@@ -39,6 +52,24 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env) {
     );
   }
   const config = result.data;
+  for (const name of ['TERMS_URL', 'PRIVACY_URL'] as const) {
+    const value = config[name];
+    if (!value) continue;
+    const url = new URL(value, config.PUBLIC_URL);
+    if (
+      (!value.startsWith('/') && url.protocol !== 'https:') ||
+      (value.startsWith('/') && url.origin !== new URL(config.PUBLIC_URL).origin) ||
+      value.startsWith('//') ||
+      [...value].some((character) => character.charCodeAt(0) < 32) ||
+      url.username ||
+      url.password
+    )
+      throw new Error(`${name} must be an HTTPS URL or a same-origin path`);
+  }
+  if (config.TERMS_VERSION && (!config.TERMS_URL || !config.PRIVACY_URL))
+    throw new Error(
+      'TERMS_VERSION requires TERMS_URL and PRIVACY_URL for the actual instance policies',
+    );
   const previousMasterKeys = parsePreviousKeys(config.HELIOUS_PREVIOUS_MASTER_KEYS);
   new KeyRing(config.HELIOUS_MASTER_KEY_ID, config.HELIOUS_MASTER_KEY, previousMasterKeys);
   if (config.NODE_ENV === 'production' && !config.RESEND_API_KEY)

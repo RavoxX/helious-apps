@@ -282,3 +282,18 @@
     font-size: 11px;
   }
 }
+.auth-form-wrap .policy-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.auth-form-wrap .policy-checkbox input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  flex: none;
+  margin-top: 3px;
+  accent-color: var(--accent, #1675db);
+}

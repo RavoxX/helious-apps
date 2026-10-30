@@ -86,6 +86,7 @@ beforeEach(async () => {
   app = await buildApp(
     loadConfig({
       NODE_ENV: 'test',
+      REGISTRATION_MIN_AGE: '0',
       PUBLIC_URL: origin,
       COOKIE_SECURE: 'false',
       HELIOUS_MASTER_KEY: 'a'.repeat(64),
@@ -514,6 +515,7 @@ it('bridges the official MCP client over stdio to authenticated Streamable HTTP 
   app = await buildApp(
     loadConfig({
       NODE_ENV: 'test',
+      REGISTRATION_MIN_AGE: '0',
       PUBLIC_URL: `http://127.0.0.1:${port}`,
       COOKIE_SECURE: 'false',
       HELIOUS_MASTER_KEY: 'a'.repeat(64),

@@ -114,6 +114,7 @@ export function createSecurityService(db: Db, ring: KeyRing) {
       {
         _id: expected._id,
         authVersion: expected.authVersion,
+        state: { $nin: ['deleting', 'suspended'] },
         ...(requireMfa ? { totpEnabled: true } : {}),
       },
       { $inc: { securityRevision: 1 } },

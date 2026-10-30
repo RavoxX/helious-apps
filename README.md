@@ -60,6 +60,8 @@ Point the domain's DNS to your server, allow HTTPS/HTTP for certificate provisio
 
 Open your configured URL, register, follow the verification email, then sign in and create a vault. The first registered account becomes administrator. The workspace is at `/app/`, docs at `/docs/`, API at `/api/` and MCP at `/mcp`. Native apps can connect through **Account → Self-hosted server** using the same HTTPS origin. The separate managed Helious Cloud service is optional and not required for self-hosting.
 
+Registration defaults to an 18+ self-declaration checkbox, without collecting a date of birth or ID. Configure your instance's `TERMS_VERSION`, `TERMS_URL` and `PRIVACY_URL` after publishing its actual policies. Account settings provide display-name correction, a private portable ZIP export and reauthenticated permanent deletion. Read the [account/data guide](apps/docs/account-data.md) for limits, retention and operator responsibilities; these controls do not configure your external backups or establish legal compliance automatically.
+
 ## Backups and upgrades
 
 MongoDB data and replica configuration live in the `mongo_data` and `mongo_config` named volumes. **Do not run `docker compose down -v` on an instance whose data you want to keep.** Back up the database, attachments, `.env` and every active/previous encryption key. Local desktop vaults need their own complete folder backup, including `.helious/` history; sync is not a backup.

@@ -15,6 +15,15 @@ export interface UserDocument {
   authVersion: number;
   totpEnabled?: boolean;
   securityRevision?: number;
+  state?: 'active' | 'deleting' | 'suspended';
+  policyAcceptance?: {
+    minimumAge: number;
+    ageSelfDeclared: boolean;
+    termsVersion?: string;
+    termsUrl?: string;
+    privacyUrl?: string;
+    acceptedAt: Date;
+  };
 }
 
 export interface SessionDocument {
@@ -41,6 +50,7 @@ interface SettingsDocument {
   _id: string;
   adminId?: ObjectId;
   registrationOpen?: boolean;
+  revision?: number;
 }
 
 export function collections(db: Db) {

@@ -30,4 +30,10 @@ See the root `SECURITY.md` for the milestone checklist and operational assumptio
 
 Edits and recoverable deletions retain plaintext snapshots and actor IDs in MongoDB. Restoration adds a new revision and returns content to its saved space; old Personal snapshots require their own permission even if a current note is in Code. There is no automatic pruning or individual permanent purge yet. Deleting a vault erases its history. See [History and recovery](./history).
 
-Local folders use OS permissions rather than server Space policies. Native server cookies are held in the platform keyring, and bundled webview capabilities do not grant arbitrary remote pages filesystem access. Sync is explicit per Space, uses content/revision guards and preserves conflicts; it never exports the secrets collection. See [desktop security and limits](./desktop).
+Local folders use OS permissions rather than server Space policies. Native server cookies are held in the platform keyring; the Rust/Swift clients do not embed a webview. Sync is explicit per Space, uses content/revision guards and preserves conflicts; it never exports the secrets collection. See [desktop security and limits](./desktop).
+
+## Account controls and security logs
+
+[Account settings](./account-data) support profile correction, reauthenticated portable export and queued erasure. Exports contain plaintext Personal notes and must be protected like the original vault. Deletion ends access immediately; the background worker and separately operated backups/providers have different deletion timelines.
+
+Minimal security events in MongoDB expire after 14 days through a TTL index. They record route patterns and IP addresses, without query strings or request bodies. Secret-access audit records also contain IP addresses and have a separate lifetime; the 14-day request-event TTL does not prune that audit. Operators must determine and enforce their audit, proxy/host log and backup retention before offering a hosted service.

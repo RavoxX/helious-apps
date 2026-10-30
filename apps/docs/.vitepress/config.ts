@@ -24,6 +24,7 @@ export default defineConfig({
           { text: 'History & recovery', link: '/history' },
           { text: 'Architecture', link: '/architecture' },
           { text: 'Account & API', link: '/api' },
+          { text: 'Account data & deletion', link: '/account-data' },
           { text: 'Email & recovery', link: '/email' },
           { text: 'Security', link: '/security' },
           { text: 'Secrets, TOTP & key rotation', link: '/secrets' },

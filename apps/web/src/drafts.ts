@@ -29,3 +29,7 @@ export function discardDraft(vaultId: string, noteId: string) {
   drafts.delete(key(vaultId, noteId));
   guard();
 }
+export function discardAllDrafts() {
+  drafts.clear();
+  guard();
+}

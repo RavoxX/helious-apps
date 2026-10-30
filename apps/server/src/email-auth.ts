@@ -1,5 +1,5 @@
 import argon2 from 'argon2';
-import { MongoServerError, type Db } from 'mongodb';
+import { MongoServerError, type Db, type ObjectId } from 'mongodb';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Config } from './config.js';
@@ -67,10 +67,10 @@ export async function registerEmailAuth(
     properties: { token: { type: 'string', maxLength: 128 } },
     additionalProperties: false,
   };
-  async function deliver(to: string, kind: EmailKind, url: string) {
+  async function deliver(to: string, kind: EmailKind, url: string, userId?: ObjectId) {
     try {
       if (kind === 'password-changed' || kind === 'email-changed')
-        return await notices.send(to, kind, url);
+        return await notices.send(to, kind, url, userId);
       await mail.send(await emailMessage(to, kind, url));
       return true;
     } catch {
@@ -103,7 +103,11 @@ export async function registerEmailAuth(
     async (request, reply) => {
       const address = email.parse((request.body as { email: string }).email);
       const allowed = await tokens.allowEmail(address);
-      const user = await store.users.findOne({ email: address, emailVerified: false });
+      const user = await store.users.findOne({
+        email: address,
+        emailVerified: false,
+        state: { $nin: ['deleting', 'suspended'] },
+      });
       if (user && allowed) {
         const issued = await tokens.issue(user._id, 'verify-email');
         if (
@@ -131,7 +135,10 @@ export async function registerEmailAuth(
         // Delivery runs after the neutral response so provider latency cannot enumerate accounts.
         const work = new Promise<void>((resolve) => setImmediate(resolve))
           .then(async () => {
-            const user = await store.users.findOne({ email: address });
+            const user = await store.users.findOne({
+              email: address,
+              state: { $nin: ['deleting', 'suspended'] },
+            });
             if (!user) return;
             const issued = await tokens.issue(user._id, 'reset-password');
             await deliver(
@@ -157,11 +164,19 @@ export async function registerEmailAuth(
       const body = z.object({ token: z.string().max(128) }).parse(request.body);
       const token = await tokens.consume(body.token, ['verify-email', 'change-email']);
       if (!token) return reply.code(400).send({ error: invalidLink });
-      const user = await store.users.findOne({ _id: token.userId });
+      const user = await store.users.findOne({
+        _id: token.userId,
+        state: { $nin: ['deleting', 'suspended'] },
+      });
       if (!user) return reply.code(400).send({ error: invalidLink });
       if (token.type === 'verify-email') {
         await store.users.updateOne(
-          { _id: user._id, emailVerified: false },
+          {
+            _id: user._id,
+            emailVerified: false,
+            authVersion: user.authVersion,
+            state: { $nin: ['deleting', 'suspended'] },
+          },
           { $set: { emailVerified: true, verifiedAt: new Date() } },
         );
       } else {
@@ -169,7 +184,12 @@ export async function registerEmailAuth(
           return reply.code(400).send({ error: invalidLink });
         try {
           const result = await store.users.updateOne(
-            { _id: user._id, pendingEmail: token.targetEmail },
+            {
+              _id: user._id,
+              pendingEmail: token.targetEmail,
+              authVersion: user.authVersion,
+              state: { $nin: ['deleting', 'suspended'] },
+            },
             {
               $set: { email: token.targetEmail, emailVerified: true, verifiedAt: new Date() },
               $unset: { pendingEmail: '' },
@@ -190,8 +210,13 @@ export async function registerEmailAuth(
           .collection('email_tokens')
           .updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: new Date() } });
         await Promise.all([
-          deliver(user.email, 'email-changed', `${config.PUBLIC_URL}/app/?mode=login`),
-          deliver(token.targetEmail, 'email-changed', `${config.PUBLIC_URL}/app/?mode=login`),
+          deliver(user.email, 'email-changed', `${config.PUBLIC_URL}/app/?mode=login`, user._id),
+          deliver(
+            token.targetEmail,
+            'email-changed',
+            `${config.PUBLIC_URL}/app/?mode=login`,
+            user._id,
+          ),
         ]);
       }
       return { message: 'Email verified. You can now sign in.' };
@@ -226,7 +251,7 @@ export async function registerEmailAuth(
       const token = await tokens.consume(body.token, ['reset-password']);
       if (!token) return reply.code(400).send({ error: invalidLink });
       const user = await store.users.findOneAndUpdate(
-        { _id: token.userId },
+        { _id: token.userId, state: { $nin: ['deleting', 'suspended'] } },
         { $set: { passwordHash }, $unset: { pendingEmail: '' }, $inc: { authVersion: 1 } },
         { returnDocument: 'after' },
       );
@@ -240,6 +265,7 @@ export async function registerEmailAuth(
         user.email,
         'password-changed',
         `${config.PUBLIC_URL}/app/?mode=login`,
+        user._id,
       );
       return {
         message:

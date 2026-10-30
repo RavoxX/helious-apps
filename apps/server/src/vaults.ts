@@ -240,6 +240,16 @@ export async function registerVaults(
       };
       await db.client.withSession((session) =>
         session.withTransaction(async () => {
+          const account = await db.collection('users').updateOne(
+            {
+              _id: owner(request),
+              authVersion: request.auth!.user.authVersion,
+              state: { $nin: ['deleting', 'suspended'] },
+            },
+            { $inc: { securityRevision: 1 } },
+            { session },
+          );
+          if (!account.matchedCount) throw requestError('Account is unavailable.', 403);
           await store.vaults.insertOne(vault, { session });
           await ensureDefaultSpaces(db, vault.ownerId, vault._id, session);
         }),

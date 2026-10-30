@@ -24,6 +24,8 @@ import { registerAgentRoutes } from './agent-routes.js';
 import { registerOAuth } from './oauth.js';
 import { registerMcp } from './mcp-http.js';
 import { registerSync } from './sync.js';
+import { registerAccountRights } from './account-rights.js';
+import { registerSecurityEvents } from './security-events.js';
 
 export async function buildApp(
   config: Config,
@@ -39,6 +41,9 @@ export async function buildApp(
             'req.headers.x-csrf-token',
             'res.headers.set-cookie',
             'req.url',
+            'req.remoteAddress',
+            'req.remotePort',
+            'req.ip',
           ],
         }
       : false,
@@ -60,6 +65,7 @@ export async function buildApp(
     return reply.code(500).send({ error: 'Something went wrong. Please try again.' });
   });
   const store = await initializeDatabase(db);
+  await registerSecurityEvents(app, db);
   const ring = new KeyRing(
     config.HELIOUS_MASTER_KEY_ID,
     config.HELIOUS_MASTER_KEY,
@@ -143,6 +149,7 @@ export async function buildApp(
     security,
   );
   await registerVaults(app, db, authenticate);
+  await registerAccountRights(app, db, config, authenticate, security);
   await registerSync(app, db, authenticate, security);
   await registerAgentRoutes(app, db, config, authenticate, tokens, security);
   await registerOAuth(app, db, config, authenticate, tokens, security);

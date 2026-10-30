@@ -56,6 +56,7 @@ const OAuthConsent = lazy(() =>
   import('./AgentConnections').then((module) => ({ default: module.OAuthConsent })),
 );
 import { EmailFlow, ResendVerification, ChangeEmail } from './EmailFlow';
+import { AccountData } from './AccountData';
 import './style.css';
 import './auth.css';
 import './dashboard.css';
@@ -100,11 +101,25 @@ function Auth() {
   const client = useQueryClient();
   const registration = useQuery({
     queryKey: ['registration'],
-    queryFn: () => api<{ registrationOpen: boolean }>('/auth/config'),
+    queryFn: () =>
+      api<{
+        registrationOpen: boolean;
+        minimumAge: number;
+        terms: { version: string; url: string } | null;
+        privacyUrl: string | null;
+      }>('/auth/config'),
   });
   const isRegister = mode === 'register' && registration.data?.registrationOpen !== false;
   const mutation = useMutation({
-    mutationFn: (data: { email: string; password: string; name?: string; code?: string }) =>
+    mutationFn: (data: {
+      email: string;
+      password: string;
+      name?: string;
+      code?: string;
+      ageConfirmed?: boolean;
+      termsAccepted?: boolean;
+      termsVersion?: string;
+    }) =>
       api<{ user?: User; verificationRequired?: boolean }>(
         `/auth/${isRegister ? 'register' : 'login'}`,
         'POST',
@@ -125,6 +140,15 @@ function Auth() {
       password,
       ...(!isRegister && values.get('code') ? { code: String(values.get('code')).trim() } : {}),
       ...(isRegister ? { name: String(values.get('name') ?? '').trim() } : {}),
+      ...(isRegister && registration.data?.minimumAge
+        ? { ageConfirmed: values.get('ageConfirmed') === 'on' }
+        : {}),
+      ...(isRegister && registration.data?.terms
+        ? {
+            termsAccepted: values.get('termsAccepted') === 'on',
+            termsVersion: registration.data.terms.version,
+          }
+        : {}),
     });
   };
   return (
@@ -173,6 +197,12 @@ function Auth() {
             )}
             {new URLSearchParams(window.location.search).has('reset') && (
               <p role="status">Password changed. Sign in with your new password.</p>
+            )}
+            {new URLSearchParams(window.location.search).has('deleted') && (
+              <p role="status">
+                Your account is closed and permanent erasure is queued. Your sessions and agent
+                access have ended.
+              </p>
             )}
             {pendingEmail && (
               <div className="verification-notice">
@@ -253,6 +283,35 @@ function Auth() {
                 </p>
               )}
               <div aria-live="polite">
+                {isRegister && !!registration.data?.minimumAge && (
+                  <label className="policy-checkbox">
+                    <input type="checkbox" name="ageConfirmed" required />{' '}
+                    <span>
+                      I confirm that I am at least {registration.data.minimumAge} years old.
+                    </span>
+                  </label>
+                )}
+                {isRegister && registration.data?.terms && (
+                  <label className="policy-checkbox">
+                    <input type="checkbox" name="termsAccepted" required />{' '}
+                    <span>
+                      I agree to the{' '}
+                      <a href={registration.data.terms.url} target="_blank" rel="noreferrer">
+                        Terms of Service
+                      </a>
+                      .
+                    </span>
+                  </label>
+                )}
+                {isRegister && registration.data?.privacyUrl && (
+                  <p className="field-hint">
+                    See how this instance handles your data in its{' '}
+                    <a href={registration.data.privacyUrl} target="_blank" rel="noreferrer">
+                      Privacy Policy
+                    </a>
+                    .
+                  </p>
+                )}
                 {mutation.error && (
                   <p role="alert" className="error-message">
                     {errorText(mutation.error)}
@@ -416,6 +475,7 @@ function AdminSettings({ user }: { user: User }) {
         </div>
       </dl>
       <ChangeEmail currentEmail={user.email} pendingEmail={user.pendingEmail} />
+      <AccountData user={user} />
       <section className="account-appearance" aria-labelledby="appearance-heading">
         <div>
           <h2 id="appearance-heading">Appearance</h2>
@@ -446,8 +506,8 @@ function AdminSettings({ user }: { user: User }) {
         </div>
       )}
       <p className="notice">
-        In-account password changes, 2FA, agent tokens and secret storage arrive in later phases.
-        See the <a href="/docs/roadmap">roadmap</a>.
+        Manage authenticators in Security & access and agent tokens in AI connections. For help with
+        your data, see the <a href="/docs/account-data">account guide</a>.
       </p>
     </>
   );

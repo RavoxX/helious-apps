@@ -16,6 +16,14 @@ Knowledge routes authenticate before checking vault ownership; all note, search,
 
 Only the attachment upload route accepts multipart, with the same Origin and signed-CSRF checks. It streams a single file up to 20 MiB to GridFS, publishes only completed metadata and removes failed upload chunks. Downloads are forced attachments with an inert content type and nosniff. Vault deletion marks the vault deleting before cascading; it can be retried after interruption. A process crash during an upload can leave unreachable uploading metadata/chunks: automated stale-upload reclamation and storage quotas are future operational work. Back up MongoDB including GridFS.
 
+## Account data and retention
+
+Registration can require an explicit adult self-declaration and versioned terms acceptance; it does not verify age or collect birth dates/identity documents. Profile changes are owner-scoped and reject extra fields. Portable ZIP exports require current-password proof and an unused factor when MFA is enabled. A hashed, single-use five-minute grant is bound to the current session/account version. Positive field projections exclude secret values/ciphertext and authentication credentials; streamed output is size-bounded and private, not a consistent backup.
+
+Account deletion reauthenticates, freezes the account/vaults transactionally and revokes access before queued erasure. The last active verified administrator is protected by a shared transaction lock. Other administrator-role mutations must acquire the same `admin-guard` lock. A retryable worker removes owned data and orphaned GridFS files; operators must monitor pending jobs and external copies/backups. See [account/data operations](apps/docs/account-data.md).
+
+Minimal database-backed security events contain route patterns, method, status, IP and authenticated account ID, with a 14-day TTL. Query strings, bodies, credentials and email addresses are not recorded in these events. MongoDB cleanup is asynchronous. Secret-access audit records have separate retention and may contain IP addresses; they are not covered by this TTL. Host/reverse-proxy logs and backups require operator configuration. Do not describe all IP-bearing records as automatically expiring after fourteen days.
+
 ## Email verification and recovery
 
 New users require email verification and receive no session before confirming. Legacy users without the verification field are migrated to verified. `email_tokens` contains only hashes of 32-byte CSPRNG tokens, with explicit 30-minute expiry and atomic single use; one slot per user/type invalidates earlier links. Hash comparisons are constant time. Link requests use database-backed rolling address limits plus IP limits. Forgot-password responses are identical across known/unknown addresses, rate limiting and delivery failure; delivery is asynchronous so provider latency does not reveal account existence.

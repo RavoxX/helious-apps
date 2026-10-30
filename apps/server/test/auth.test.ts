@@ -12,6 +12,7 @@ const mail = new MemoryEmailService();
 const origin = 'http://localhost:3000';
 const config = loadConfig({
   NODE_ENV: 'test',
+  REGISTRATION_MIN_AGE: '0',
   HELIOUS_MASTER_KEY: 'a'.repeat(64),
   PUBLIC_URL: origin,
   COOKIE_SECURE: 'false',
@@ -357,6 +358,9 @@ describe('account foundation against MongoDB 7', () => {
     expect(accepted.statusCode).toBe(200);
     expect((await app.inject({ url: '/api/auth/config' })).json()).toEqual({
       registrationOpen: false,
+      minimumAge: 0,
+      terms: null,
+      privacyUrl: null,
     });
     expect((await register({ ...account, email: 'late@example.com' })).statusCode).toBe(403);
   });

@@ -13,6 +13,7 @@ const mongo = await MongoMemoryReplSet.create({
 const { client, db } = await connectDatabase(mongo.getUri('helious-preview'));
 const config = loadConfig({
   NODE_ENV: 'development',
+  REGISTRATION_MIN_AGE: '0', // Isolated legacy-flow fixture; policy enforcement has separate tests.
   PORT: String(port),
   HELIOUS_MASTER_KEY: randomBytes(32).toString('hex'),
   PUBLIC_URL: `http://localhost:${port}`,

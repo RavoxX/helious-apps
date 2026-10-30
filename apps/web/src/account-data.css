@@ -1,0 +1,53 @@
+.account-data {
+  max-width: 760px;
+}
+.account-data section {
+  padding: 30px 0;
+  border-top: 1px solid var(--line);
+}
+.account-data h2 {
+  font-size: 19px;
+  margin: 0 0 12px;
+}
+.account-data p {
+  max-width: 65ch;
+  color: var(--color-muted);
+  line-height: 1.7;
+  font-size: 14px;
+}
+.account-data form {
+  display: grid;
+  gap: 10px;
+  max-width: 440px;
+  margin: 18px 0;
+}
+.account-data label {
+  font-size: 13px;
+}
+.account-data input {
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  font: inherit;
+}
+.account-data input:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.account-data form > button {
+  justify-self: start;
+  margin-top: 5px;
+}
+.account-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+.account-erasure {
+  margin-top: 18px;
+}

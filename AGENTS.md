@@ -1,6 +1,6 @@
 # Helious Apps — agent guide
 
-Additional owner requests are queued behind the native rebuild: generic 18+ registration self-declaration (checkbox only, no identity/DOB verification), account deletion/export/correction, privacy/retention/contact safeguards. Concrete operator/address/support details and the separate-container/domain admin/support panel belong only in the private repository. Never copy its LEGAL-LAUNCH.md or PROJECT-STATUS.md into this public checkout. Do not claim the queued compliance/admin work is implemented. The owner selected Apache 2.0 for this public source; preserve LICENSE, NOTICE and third-party attributions.
+The native v0.8.1 prerelease is published with signed update feeds. Registration now supports an 18+ self-declaration (no identity/DOB verification) and versioned terms. Account settings include correction, portable export and queued deletion. Concrete operator/address/support details, legal review drafts and the separate-container/domain admin/support panel belong only in the private repository. Never copy its LEGAL-LAUNCH.md or PROJECT-STATUS.md into this public checkout. Do not claim the queued operator/admin work or Cloud deployment is complete. The owner selected Apache 2.0 for this public source; preserve LICENSE, NOTICE and third-party attributions.
 
 ## Repository boundaries
 
@@ -20,7 +20,7 @@ Before editing, check this checkout's remote, branch and working-tree status. Ne
 - `packages/core` and `packages/mcp`: shared TypeScript knowledge engine and official-SDK MCP implementation.
 - `apps/docs`: application and self-hosting guides. `/` redirects to `/app/`; there is no marketing homepage in this distribution.
 
-The current priority is the native desktop rebuild and automatic updating. Phase 9 canvas/templates/daily-note work is not complete and must not be presented as shipped. An unfinished foundation remains in the private workspace's `codex/phase9-authoring-wip` branch.
+The current priority is account/data safeguards followed by private operator/admin work. Phase 9 canvas/templates/daily-note work is not complete and must not be presented as shipped. An unfinished foundation remains in the private workspace's `codex/phase9-authoring-wip` branch.
 
 Managed Cloud defaults to **https://helious.work**. The owner explicitly said it is not live yet. Keep local folders usable offline, show actionable connection failures, and offer a custom self-hosted server origin. Never invent a successful deployment or sign-in.
 
@@ -34,7 +34,7 @@ Existing `.md` folders and `.helious/` metadata/history must remain compatible. 
 
 - Server/web: Node **22**, pnpm **10.28.2**, strict TypeScript. Use the lockfile; `npx --yes pnpm@10.28.2` is the fallback when global pnpm differs.
 - Run relevant checks: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`.
-- Rust: stable, minimum 1.95. Workspace `apps/desktop/Cargo.toml`; `cargo +stable check/test --manifest-path apps/desktop/Cargo.toml`, `cargo +stable clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings`, `cargo +stable fmt --manifest-path apps/desktop/Cargo.toml --check`.
+- Rust: stable, minimum 1.95. Workspace `apps/desktop/Cargo.toml`; `cargo +stable check/test --manifest-path apps/desktop/Cargo.toml`, `cargo +stable clippy --manifest-path apps/desktop/Cargo.toml --all-targets -- -D warnings`, `cargo +stable fmt --all --manifest-path apps/desktop/Cargo.toml --check`.
 - Swift/macOS compilation and universal packaging require macOS. Use the desktop GitHub workflow; do not claim a native UI was run when only compilation or a browser fixture was checked.
 - Update docs with behavior and limitations. Use synthetic accounts and temporary folders in tests. Run meaningful permission, filesystem, sync and updater verification tests for related changes.
 

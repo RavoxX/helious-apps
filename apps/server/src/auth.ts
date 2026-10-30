@@ -22,7 +22,12 @@ const credentials = z.object({
   password,
   code: z.string().max(128).optional(),
 });
-const registration = credentials.extend({ name: z.string().trim().min(1).max(80) });
+const registration = credentials.extend({
+  name: z.string().trim().min(1).max(80),
+  ageConfirmed: z.boolean().optional(),
+  termsAccepted: z.boolean().optional(),
+  termsVersion: z.string().max(80).optional(),
+});
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 export const hashPassword = (value: string) =>
   argon2.hash(value, { type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 1 });
@@ -99,6 +104,10 @@ export async function registerAuth(
     const user = session ? await store.users.findOne({ _id: session.userId }) : null;
     if (!session || !user)
       return reply.code(401).send({ error: 'Your session has expired. Sign in again.' });
+    if (user.state && user.state !== 'active')
+      return reply
+        .code(403)
+        .send({ error: 'This account is unavailable. Contact your instance administrator.' });
     if (!user.emailVerified)
       return reply.code(403).send({ error: 'Please verify your email', code: 'EMAIL_UNVERIFIED' });
     if ((session.authVersion ?? 0) !== user.authVersion)
@@ -137,6 +146,19 @@ export async function registerAuth(
       authVersion: user.authVersion,
       ...(mfa ? { mfaVerifiedAt: now } : {}),
     });
+    // A deletion/password change may race the password check above.
+    if (
+      !(await store.users.findOne({
+        _id: user._id,
+        authVersion: user.authVersion,
+        state: { $nin: ['deleting', 'suspended'] },
+      }))
+    ) {
+      await store.sessions.deleteOne({ tokenHash: hashToken(token) });
+      throw Object.assign(new Error('This account is unavailable. Sign in again.'), {
+        statusCode: 401,
+      });
+    }
     reply.setCookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_MS / 1000 });
   };
   async function recordLoginFailure(emailKey: string) {
@@ -192,7 +214,12 @@ export async function registerAuth(
   );
   app.get('/api/auth/config', async () => {
     const settings = await store.settings.findOne({ _id: 'registration' });
-    return { registrationOpen: settings?.registrationOpen ?? config.REGISTRATION_OPEN };
+    return {
+      registrationOpen: settings?.registrationOpen ?? config.REGISTRATION_OPEN,
+      minimumAge: config.REGISTRATION_MIN_AGE,
+      terms: config.TERMS_VERSION ? { version: config.TERMS_VERSION, url: config.TERMS_URL } : null,
+      privacyUrl: config.PRIVACY_URL || null,
+    };
   });
 
   app.post(
@@ -209,6 +236,9 @@ export async function registerAuth(
             email: { type: 'string', format: 'email' },
             password: { type: 'string', minLength: 12, maxLength: 128 },
             name: { type: 'string', minLength: 1, maxLength: 80 },
+            ageConfirmed: { type: 'boolean' },
+            termsAccepted: { type: 'boolean' },
+            termsVersion: { type: 'string', maxLength: 80 },
           },
           additionalProperties: false,
         },
@@ -226,6 +256,19 @@ export async function registerAuth(
           .code(400)
           .send({ error: 'Enter a valid email, name, and password of 12–128 characters.' });
       const { email, name, password: value } = parsed.data;
+      if (config.REGISTRATION_MIN_AGE && parsed.data.ageConfirmed !== true)
+        return reply.code(400).send({
+          error: 'Confirm that you are at least 18 years old.',
+          code: 'AGE_DECLARATION_REQUIRED',
+        });
+      if (
+        config.TERMS_VERSION &&
+        (parsed.data.termsAccepted !== true || parsed.data.termsVersion !== config.TERMS_VERSION)
+      )
+        return reply.code(400).send({
+          error: 'Review and accept the current terms before registering.',
+          code: 'TERMS_ACCEPTANCE_REQUIRED',
+        });
       const user: UserDocument = {
         _id: new ObjectId(),
         email,
@@ -235,6 +278,16 @@ export async function registerAuth(
         createdAt: new Date(),
         emailVerified: false,
         authVersion: 0,
+        state: 'active',
+        policyAcceptance: {
+          minimumAge: config.REGISTRATION_MIN_AGE,
+          ageSelfDeclared: parsed.data.ageConfirmed === true,
+          acceptedAt: new Date(),
+          ...(config.TERMS_VERSION
+            ? { termsVersion: config.TERMS_VERSION, termsUrl: config.TERMS_URL }
+            : {}),
+          ...(config.PRIVACY_URL ? { privacyUrl: config.PRIVACY_URL } : {}),
+        },
       };
       try {
         await store.users.insertOne(user);
@@ -295,7 +348,7 @@ export async function registerAuth(
         return reply.code(429).send({ error: 'Too many attempts. Try again in 15 minutes.' });
       const user = await store.users.findOne({ email });
       const valid = await argon2.verify(user?.passwordHash ?? dummyHash, value);
-      if (!user || !valid) {
+      if (!user || !valid || (user.state && user.state !== 'active')) {
         await recordLoginFailure(emailKey);
         return reply.code(401).send({ error: 'Email or password is incorrect.' });
       }

@@ -17,6 +17,7 @@ FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
 WORKDIR /app
 COPY --from=build --chown=node:node /runtime ./apps/server
+COPY --chown=node:node LICENSE NOTICE ./
 COPY --from=build --chown=node:node /app/apps/web/dist ./apps/web/dist
 COPY --from=build --chown=node:node /app/apps/docs/.vitepress/dist ./apps/docs/.vitepress/dist
 USER node

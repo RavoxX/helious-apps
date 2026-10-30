@@ -176,6 +176,7 @@ export function createAgentTokens(db: Db) {
       _id: token.ownerId,
       emailVerified: true,
       authVersion: token.authVersion,
+      state: { $nin: ['deleting', 'suspended'] as const },
       ...(token.scopes.some((scope) => scope.startsWith('secrets:')) ? { totpEnabled: true } : {}),
     };
     const user = lock
@@ -221,7 +222,7 @@ export function createAgentTokens(db: Db) {
     } = {},
   ) {
     const user = await accounts.users.findOne(
-      { _id: ownerId, emailVerified: true },
+      { _id: ownerId, emailVerified: true, state: { $nin: ['deleting', 'suspended'] } },
       { session: options.session },
     );
     if (!user) throw securityError('Account is unavailable.', 403);

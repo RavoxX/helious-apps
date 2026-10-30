@@ -25,6 +25,7 @@ async function login(email: string) {
   app = await buildApp(
     loadConfig({
       NODE_ENV: 'test',
+      REGISTRATION_MIN_AGE: '0',
       PUBLIC_URL: origin,
       COOKIE_SECURE: 'false',
       HELIOUS_MASTER_KEY: 'a'.repeat(64),
@@ -59,6 +60,7 @@ beforeEach(async () => {
   app = await buildApp(
     loadConfig({
       NODE_ENV: 'test',
+      REGISTRATION_MIN_AGE: '0',
       PUBLIC_URL: origin,
       COOKIE_SECURE: 'false',
       HELIOUS_MASTER_KEY: 'a'.repeat(64),

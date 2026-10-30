@@ -11,6 +11,7 @@ interface Notification {
   createdAt: Date;
   nextAttemptAt: Date;
   leaseUntil?: Date;
+  userId?: ObjectId;
 }
 
 /** Durable security notices contain no verification/reset token or password. */
@@ -24,7 +25,7 @@ export class EmailNotifications {
   async initialize() {
     await this.db.collection<Notification>('email_notifications').createIndex({ nextAttemptAt: 1 });
   }
-  async send(to: string, kind: Kind, url: string) {
+  async send(to: string, kind: Kind, url: string, userId?: ObjectId) {
     const now = new Date();
     const notice: Notification = {
       _id: new ObjectId(),
@@ -33,6 +34,7 @@ export class EmailNotifications {
       url,
       createdAt: now,
       nextAttemptAt: now,
+      ...(userId ? { userId } : {}),
     };
     await this.db.collection<Notification>('email_notifications').insertOne(notice);
     return this.attempt(notice._id, now);
@@ -49,6 +51,15 @@ export class EmailNotifications {
       { returnDocument: 'after' },
     );
     if (!notice) return true;
+    if (
+      notice.userId &&
+      !(await this.db
+        .collection('users')
+        .findOne({ _id: notice.userId, state: { $nin: ['deleting', 'suspended'] } }))
+    ) {
+      await collection.deleteOne({ _id: id });
+      return true;
+    }
     if (!(await new EmailTokens(this.db).allowEmail(notice.to, now))) {
       await collection.updateOne(
         { _id: id },

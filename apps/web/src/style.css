@@ -617,9 +617,12 @@ input::placeholder {
   padding: 10px;
   border: 1px solid oklch(0.42 0.04 25);
   border-radius: 5px;
-  color: oklch(0.82 0.1 25);
+  color: oklch(0.47 0.18 25);
   font-size: 11px;
   background: var(--color-panel);
+}
+[data-theme='dark'] .danger-button {
+  color: oklch(0.8 0.13 25);
 }
 .account-details {
   margin: 35px 0;
