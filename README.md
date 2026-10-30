@@ -82,3 +82,5 @@ If startup fails, check the app/container logs and `/api/health`: missing master
 ## License
 
 Helious Apps source is licensed under [Apache 2.0](LICENSE). You may self-host, modify and redistribute it under that license. Preserve the applicable license and notices when redistributing. Third-party libraries/fonts retain their own licenses; native installers include their notices. The Helious name/logo are not licensed as trademarks. The private marketing website and admin/operator materials are outside this repository.
+
+The browser distribution includes the original [Manrope Open Font License](apps/web/public/licenses/Manrope-OFL.txt) at `/app/licenses/Manrope-OFL.txt`.
