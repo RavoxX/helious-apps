@@ -17,6 +17,8 @@ One Node.js 22/Fastify container serves the React panel, VitePress docs and REST
 
 Accounts, vaults, notes, spaces, versions, GridFS and encrypted secrets are implemented through Phase 8, including agent tokens and OAuth.
 
+The first Phase 9 browser authoring milestone reuses these stores: templates and daily notes are normal versioned Markdown, typed properties edit bounded YAML while preserving untouched nodes/body, and `.canvas` files use GridFS attachments through the existing session-only sync-file CAS routes. No new auth, storage collection or secret resolution is introduced. Canvas manager, surface, inspector forms and shared format validation are separate modules. See [authoring](./authoring) and [Canvas](./canvas) for limits and native differences.
+
 | Collection                   | Shape and indexes                                                                                                                                                                                 |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `users`                      | `_id`, normalized unique `email`, `name`, Argon2id `passwordHash`, `role`, `createdAt`                                                                                                            |

@@ -1,0 +1,82 @@
+.authoring-tools,
+.properties-editor {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+  min-width: 0;
+}
+.authoring-tools {
+  width: 100%;
+}
+.authoring-tools summary,
+.properties-editor summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.authoring-tools p,
+.properties-editor p {
+  color: var(--color-muted);
+  font-size: 12px;
+  margin: 10px 0;
+}
+.authoring-tools label,
+.property-controls {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.authoring-tools input,
+.authoring-tools select,
+.property-controls input,
+.property-controls select,
+.property-controls textarea {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--color-bg);
+  padding: 9px;
+  color: var(--color-ink);
+}
+.authoring-row {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.authoring-row label {
+  flex: 1 1 180px;
+}
+.authoring-tools button,
+.properties-editor button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 12px;
+  min-height: 38px;
+}
+.properties-editor {
+  margin: 12px 0;
+}
+.properties-editor dl > div {
+  margin: 10px 0;
+}
+.properties-editor dt {
+  font-size: 12px;
+  font-weight: 600;
+}
+.properties-editor dd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+.properties-editor dd code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 80px;
+}
+.property-controls {
+  max-width: 600px;
+}

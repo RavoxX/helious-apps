@@ -9,6 +9,8 @@ Public application and self-hosting source for Helious. The marketing website an
 
 Read [AGENTS.md](AGENTS.md), [desktop setup](apps/docs/desktop.md), [Docker installation](apps/docs/deployment.md) and [security guidance](SECURITY.md). Native desktop previews are built by GitHub Actions; see the desktop guide for feature differences from the browser. No marketing homepage is shipped: the server redirects / to /app/.
 
+The browser workspace includes [daily notes, Markdown templates and typed YAML properties](apps/docs/authoring.md), plus [portable JSON Canvas boards](apps/docs/canvas.md) with cards, connections and conflict-safe saves. Native v0.8.1 does not yet expose these authoring controls; richer media/reading and the plugin API remain in progress.
+
 ## Self-host with Docker Compose
 
 You need Git, Docker Engine with the Compose plugin (or Docker Desktop), a domain for remote access, and a Resend account with a verified sending domain. The production container requires working transactional email: accounts must verify their email before signing in.

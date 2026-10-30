@@ -18,6 +18,7 @@ import {
   ChartNoAxesCombined,
   History,
   KeyRound,
+  LayoutDashboard,
 } from 'lucide-react';
 import { api } from './api';
 import { AttachmentLink } from './AttachmentLink';
@@ -43,11 +44,16 @@ const GraphExplorer = lazy(() =>
 const VaultAnalytics = lazy(() =>
   import('./VaultAnalytics').then((module) => ({ default: module.VaultAnalytics })),
 );
+const CanvasManager = lazy(() =>
+  import('./CanvasEditor').then((module) => ({ default: module.CanvasManager })),
+);
 import { Notebook } from './Notebook';
 import { CommandPalette } from './CommandPalette';
 import { getDraft, keepDraft, discardDraft } from './drafts';
 import { FileTree } from './FileTree';
 import { WorkspaceSettings } from './WorkspaceSettings';
+import { AuthoringTools } from './AuthoringTools';
+import { PropertiesEditor } from './PropertiesEditor';
 import { loadPreferences, matchesShortcut, type ShortcutAction } from './preferences';
 import './vaults.css';
 import './workspace.css';
@@ -331,6 +337,15 @@ function NoteEditor({
           </select>
           <span>Space changes take effect when you save.</span>
         </label>
+        {mode !== 'Reading' && (
+          <PropertiesEditor
+            value={markdown}
+            change={(value) => {
+              setMarkdown(value);
+              setSaved(false);
+            }}
+          />
+        )}
         <div className={`markdown-surface ${mode === 'Live preview' ? 'markdown-split' : ''}`}>
           <div className="source-pane" hidden={mode === 'Reading'}>
             <span className="editor-caption">Markdown source</span>
@@ -552,7 +567,7 @@ export function VaultLibrary({
   const [preferences, setPreferences] = useState(() => loadPreferences(userId));
   const [explorerOpen, setExplorerOpen] = useState(true);
   const [moveError, setMoveError] = useState('');
-  const [view, setView] = useState<'notes' | 'graph' | 'analytics' | 'secrets'>('notes');
+  const [view, setView] = useState<'notes' | 'graph' | 'analytics' | 'canvas' | 'secrets'>('notes');
   const [graphRoot, setGraphRoot] = useState<string | null>(null);
   const openFromInsights = (id: string) => {
     setSelectedNote(id);
@@ -989,6 +1004,15 @@ export function VaultLibrary({
           {spaces.data && (
             <div className="vault-management">
               <SpacesManager key={vaultId} vaultId={vaultId!} spaces={spaces.data.spaces} />
+              {!local && (
+                <AuthoringTools
+                  key={`${vaultId}:${selectedSpace}`}
+                  vaultId={vaultId!}
+                  spaceId={selectedSpace}
+                  spaces={spaces.data.spaces}
+                  open={openFromInsights}
+                />
+              )}
               <Suspense fallback={<p>Loading recovery…</p>}>
                 <DeletedNotes
                   key={`${vaultId}:${selectedSpace}`}
@@ -1003,7 +1027,7 @@ export function VaultLibrary({
           <div className="vault-view-tabs" role="tablist" aria-label="Vault views">
             {(local
               ? (['notes', 'graph', 'analytics'] as const)
-              : (['notes', 'graph', 'analytics', 'secrets'] as const)
+              : (['notes', 'graph', 'analytics', 'canvas', 'secrets'] as const)
             ).map((item) => {
               const Icon =
                 item === 'notes'
@@ -1012,7 +1036,9 @@ export function VaultLibrary({
                     ? Network
                     : item === 'secrets'
                       ? KeyRound
-                      : ChartNoAxesCombined;
+                      : item === 'canvas'
+                        ? LayoutDashboard
+                        : ChartNoAxesCombined;
               return (
                 <button
                   key={item}
@@ -1028,11 +1054,16 @@ export function VaultLibrary({
                   onKeyDown={(event) => {
                     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
                     event.preventDefault();
-                    const items: readonly ('notes' | 'graph' | 'analytics' | 'secrets')[] = local
+                    const items: readonly (
+                      'notes' | 'graph' | 'analytics' | 'canvas' | 'secrets'
+                    )[] = local
                       ? ['notes', 'graph', 'analytics']
-                      : ['notes', 'graph', 'analytics', 'secrets'];
+                      : ['notes', 'graph', 'analytics', 'canvas', 'secrets'];
                     const index = items.indexOf(item);
-                    const next = items[(index + (event.key === 'ArrowRight' ? 1 : 3)) % 4]!;
+                    const next =
+                      items[
+                        (index + (event.key === 'ArrowRight' ? 1 : items.length - 1)) % items.length
+                      ]!;
                     setView(next);
                     requestAnimationFrame(() =>
                       document.getElementById(`vault-tab-${next}`)?.focus(),
@@ -1054,7 +1085,16 @@ export function VaultLibrary({
                   </div>
                 }
               >
-                {view === 'secrets' ? (
+                {view === 'canvas' ? (
+                  <CanvasManager
+                    key={`${vaultId}:${selectedSpace}`}
+                    vaultId={vaultId!}
+                    spaceId={selectedSpace}
+                    spaces={spaces.data?.spaces ?? []}
+                    notes={index.data?.notes ?? []}
+                    openNote={openFromInsights}
+                  />
+                ) : view === 'secrets' ? (
                   <SecretsPanel
                     key={`${vaultId}:${selectedSpace}`}
                     vaultId={vaultId!}

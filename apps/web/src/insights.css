@@ -24,12 +24,16 @@
 }
 .vault-view-tabs {
   display: flex;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
   gap: 5px;
   border-bottom: 1px solid var(--line);
   margin: 20px 0;
 }
 .vault-view-tabs > button {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
   padding: 13px 18px;

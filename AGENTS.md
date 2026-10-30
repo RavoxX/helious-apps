@@ -20,7 +20,7 @@ Before editing, check this checkout's remote, branch and working-tree status. Ne
 - `packages/core` and `packages/mcp`: shared TypeScript knowledge engine and official-SDK MCP implementation.
 - `apps/docs`: application and self-hosting guides. `/` redirects to `/app/`; there is no marketing homepage in this distribution.
 
-The current priority is account/data safeguards followed by private operator/admin work. Phase 9 canvas/templates/daily-note work is not complete and must not be presented as shipped. An unfinished foundation remains in the private workspace's `codex/phase9-authoring-wip` branch.
+Account/data safeguards and the private operator/admin implementation have reached their tested checkpoint; actual Cloud/legal launch work remains separate. Phase 9 now has a first browser authoring milestone: templates, daily notes, typed YAML properties and conflict-safe `.canvas` editing. The native v0.8.1 UI does not yet expose these controls. Richer reading/media, native parity and the plugin boundary remain unfinished. The preserved private `codex/phase9-authoring-wip` branch must not be discarded or merged into this public history.
 
 Managed Cloud defaults to **https://helious.work**. The owner explicitly said it is not live yet. Keep local folders usable offline, show actionable connection failures, and offer a custom self-hosted server origin. Never invent a successful deployment or sign-in.
 

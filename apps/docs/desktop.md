@@ -20,7 +20,7 @@ Update signing is configured separately from platform signing. Windows Authentic
 
 Windows has no File/Edit application menu strip. Ctrl+O opens a folder; Ctrl+S saves; Ctrl+, opens Settings. macOS uses its normal system menu bar and native toolbar/editor behavior.
 
-Native/browser feature parity is still a port: coordinated rename, bookmarks, independent note tabs/panes, detailed analytics and advanced server administration remain available in the browser. Native history can load old content into a draft; Save creates a current revision. Local native graph resolution currently covers wikilinks; the browser engine has richer link/fragment handling. Do not present these differences as full parity.
+Native/browser feature parity is still a port: coordinated rename, bookmarks, independent note tabs/panes, daily/template controls, typed property forms, canvas editing, detailed analytics and advanced server administration remain available in the browser. Template/daily Markdown and `.canvas` attachments retain their normal portable formats. Native history can load old content into a draft; Save creates a current revision. Local native graph resolution currently covers wikilinks; the browser engine has richer link/fragment handling. Do not present these differences as full parity.
 
 ## Cloud and self-hosted sign-in
 

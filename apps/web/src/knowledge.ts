@@ -19,6 +19,7 @@ export function refreshVault(client: QueryClient, vaultId: string) {
       'version',
       'deleted-notes',
       'attachments',
+      'templates',
     ].map((key) => client.invalidateQueries({ queryKey: [key, vaultId] })),
   );
 }

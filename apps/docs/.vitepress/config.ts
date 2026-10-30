@@ -18,6 +18,8 @@ export default defineConfig({
           { text: 'Getting started', link: '/getting-started' },
           { text: 'Vaults, notes & search', link: '/knowledge' },
           { text: 'Markdown workspace', link: '/editor' },
+          { text: 'Daily notes, templates & properties', link: '/authoring' },
+          { text: 'Canvas', link: '/canvas' },
           { text: 'Knowledge graph', link: '/graph' },
           { text: 'Vault analytics', link: '/analytics' },
           { text: 'Spaces & permissions', link: '/spaces' },
@@ -36,6 +38,6 @@ export default defineConfig({
       },
     ],
     search: { provider: 'local' },
-    footer: { message: 'Helious · Phase 8 documentation' },
+    footer: { message: 'Helious · Application documentation' },
   },
 });

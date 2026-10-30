@@ -23,3 +23,5 @@ export * from './moves.js';
 export * from './insights.js';
 export * from './permissions.js';
 export * from './sync.js';
+export * from './authoring.js';
+export * from './canvas.js';

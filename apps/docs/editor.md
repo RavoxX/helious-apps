@@ -8,6 +8,8 @@ Signing in opens **Vaults**. A vault is a collection of notes and attachments: g
 
 Use **Notes** to write, **Graph** to explore connections, and **Analytics** to see writing activity and statistics for the selected vault. The **Current vault** selector changes collections. **Explorer** opens the note list; from an insights view it returns to Notes. **Vault settings** renames or deletes the selected vault, while **Hotkeys** customizes editor shortcuts.
 
+**Canvas** opens portable boards with cards and connections. **Daily notes & templates** creates structured Markdown, and **Properties** edits typed YAML inside a note. See [authoring tools](./authoring) and [Canvas](./canvas) for storage, draft and compatibility limits.
+
 The **Profile** button in the top right opens your account menu: account settings, active sessions, light/dark appearance, the workspace guide, and sign out. It supports Tab/Enter, Escape and click-outside dismissal, including on phones. **Account settings** manages your verified email and appearance; the password reset link sends an email through the existing recovery flow. Account settings and vault settings apply to different things.
 
 ## Writing and reading
