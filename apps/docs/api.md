@@ -26,6 +26,19 @@ Registration sends email and creates no session. Additional endpoints:
 | POST   | `/api/auth/reset-password`      | `{token,password}`; reset and revoke all sessions                 |
 | POST   | `/api/account/email`            | Session and `{email,password}`; request a verified address change |
 
+## Account policy, export and deletion
+
+`GET /api/auth/config` also returns `minimumAge`, `terms` (`{version,url}` or null) and `privacyUrl`. When an adult declaration is configured, registration requires `ageConfirmed:true`. Versioned terms also require `termsAccepted:true` and the exact current `termsVersion`. These declarations do not verify age or identity. Email verification is still mandatory.
+
+| Method | Path                         | Contract                                                                                                    |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| PATCH  | `/api/account/profile`       | `{name}` corrects the current account's display name                                                        |
+| POST   | `/api/account/export`        | `{password,code?}` authorizes a single-use, five-minute session-bound ZIP link                              |
+| GET    | `/api/account/export/:token` | Downloads that private ZIP once; credentials and secret values are excluded                                 |
+| POST   | `/api/account/delete`        | `{password,code?,confirmation}` with `confirmation:"DELETE <exact-email>"`; revoke access and queue erasure |
+
+Export/deletion require password plus an unused factor when MFA is enabled. Deletion returns 202 after freezing access; a worker handles retryable erasure. The last active administrator is protected. See [account/data operations](./account-data) for archive limits, external copies, backup handling and the distinction from a full data-access request.
+
 ## Browser request sequence
 
 Fetch `/api/auth/csrf` with cookies enabled and read `csrfToken`. On each mutation include `X-CSRF-Token`, `Content-Type: application/json`, the exact configured `Origin`, and the signed cookie. Send `{}` for mutations without other fields. The browser supplies Origin automatically. For attachment uploads, send `FormData` and let the browser set multipart Content-Type; keep the CSRF header. Treat a 403 as a reason to refresh the CSRF token and try the action again.

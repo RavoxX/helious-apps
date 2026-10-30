@@ -203,6 +203,7 @@ const recordTables: [string, Document][] = [
       spaceId: 1,
       noteId: 1,
       tokenId: 1,
+      agent: 1,
       agentId: 1,
       tool: 1,
       action: 1,

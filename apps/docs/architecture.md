@@ -81,7 +81,7 @@ Never hydrate secrets into note rendering, export, search, graph, or Markdown sy
 
 ## Build decisions
 
-Landing work was brought forward from Phase 10 because the owner explicitly requested the logo, modern flat visual styling and researched scroll animation. This does not change the feature implementation sequence. `apps/desktop` and MCP are reserved without placeholder network endpoints.
+Native desktop apps and MCP transports are implemented. This public distribution excludes the separate marketing website and operator/admin service. Platform signing/notarization and a managed Cloud deployment remain separate operational work.
 
 ## Space authorization and version storage
 
@@ -95,7 +95,7 @@ Policy updates, note/space changes, soft deletion, restores, revision snapshots 
 
 ## Phase 7 connections and activity
 
-`agent_tokens` stores only credential hashes, explicit vault/Space/action grants, account auth version, expiry and revocation. OAuth access records retain connection metadata until 30 days after family expiry (`cleanupAt` TTL); authentication still checks access expiry in code. `agent_activity` records IDs/action/token label/time/IP with 90-day TTL, without note bodies or credentials. `oauth_clients`, `oauth_requests`, `oauth_codes` and `oauth_refresh` hold public registrations, hashed pending requests/codes and rotating hashed refresh families, with explicit expiry and TTL cleanup. Replay revocation and token writes serialize against the account's security revision.
+`agent_tokens` stores only credential hashes, explicit vault/Space/action grants, account auth version, expiry and revocation. OAuth access records retain connection metadata until 30 days after family expiry (`cleanupAt` TTL); authentication still checks access expiry in code. `agent_activity` records IDs/action/token label/time with a 90-day TTL, without note bodies or credentials. IP-bearing secret audits have a separate lifetime. `oauth_clients`, `oauth_requests`, `oauth_codes` and `oauth_refresh` hold public registrations, hashed pending requests/codes and rotating hashed refresh families, with explicit expiry and TTL cleanup. Replay revocation and token writes serialize against the account's security revision.
 
 The private MCP backend reuses the knowledge REST implementation through in-process injection; it never listens on another port. It rechecks the current bearer principal inside write transactions. Each HTTP request gets a fresh stateless official SDK transport. The stdio bridge forwards to that endpoint. Tools, resources and project-context prompts share the same Space policy intersection.
 

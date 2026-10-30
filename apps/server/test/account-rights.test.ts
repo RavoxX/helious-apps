@@ -192,6 +192,10 @@ it('exports real files and safe metadata, scopes a single-use download to the sa
     encrypted: { value: 'NEVER-EXPORT-SECRET-CIPHERTEXT' },
     state: 'active',
   });
+  await db.collection('agent_activity').insertMany([
+    { ownerId: owner.id, agent: 'Synthetic coding agent', action: 'read', at: new Date() },
+    { ownerId: other.id, agent: 'Other owner agent must stay out', action: 'read', at: new Date() },
+  ]);
   expect(
     (await req(owner.headers, 'POST', '/api/account/export', { password: 'incorrect' })).statusCode,
   ).toBe(403);
@@ -202,6 +206,9 @@ it('exports real files and safe metadata, scopes a single-use download to the sa
   expect(response.statusCode).toBe(200);
   expect(response.headers['content-type']).toContain('application/zip');
   const entries = unzipSync(response.rawPayload);
+  const activity = strFromU8(entries['records/agent_activity.ndjson']!);
+  expect(JSON.parse(activity).agent).toBe('Synthetic coding agent');
+  expect(activity).not.toContain('Other owner agent');
   expect(strFromU8(entries[`vaults/${vault.id}/files/Folder/Note.md`]!)).toContain(
     'My private note',
   );
