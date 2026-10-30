@@ -83,6 +83,10 @@ it('stores minimal security events with a 14-day TTL and excludes URLs, emails a
     email: 'do-not-log@example.test',
     password: 'do-not-log-password',
   });
+  // onResponse runs after the client receives the response; wait for its async write.
+  await expect
+    .poll(() => db.collection('security_events').countDocuments(), { timeout: 5000 })
+    .toBe(1);
   const events = await db.collection('security_events').find({}).toArray();
   expect(events).toHaveLength(1);
   const event = events[0]!;
