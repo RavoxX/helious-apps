@@ -16,7 +16,7 @@ The **Profile** button in the top right opens your account menu: account setting
 
 - **Source** provides Markdown syntax highlighting, line numbers, undo/redo, selection matching and editor search.
 - **Live preview** shows editable source and a rendered preview together. Narrow screens stack the panels.
-- **Reading** shows rendered CommonMark/GFM. Raw HTML is skipped. Tables, tasks and fenced code are supported; inline attachment viewers, Mermaid and KaTeX arrive later.
+- **Reading** shows rendered CommonMark/GFM, callouts, highlighted code, KaTeX math, scoped note/media embeds and on-demand Mermaid diagrams. Raw HTML is skipped. See [reading and media](./reading) for syntax, supported formats and limits.
 - The formatting toolbar inserts bold, italic, wiki links and tasks at the selection.
 - Type `[[` for note-path completion. Click wiki or local Markdown links in the preview to open a matching note. Saved outgoing links and backlinks use the server's resolver. Use full paths for ambiguous names.
 - Click an outline item to focus its line in source mode.

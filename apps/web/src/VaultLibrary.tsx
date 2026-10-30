@@ -361,7 +361,11 @@ function NoteEditor({
           </div>
           {mode !== 'Source' && (
             <Suspense fallback={<p className="vault-status">Preparing your preview…</p>}>
-              <MarkdownReading value={markdown} openLink={openLink} />
+              <MarkdownReading
+                value={markdown}
+                openLink={openLink}
+                context={{ vaultId, path: note.path, spaceId: note.spaceId, notes }}
+              />
             </Suspense>
           )}
         </div>

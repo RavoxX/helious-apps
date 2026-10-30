@@ -25,3 +25,4 @@ export * from './permissions.js';
 export * from './sync.js';
 export * from './authoring.js';
 export * from './canvas.js';
+export * from './reading.js';

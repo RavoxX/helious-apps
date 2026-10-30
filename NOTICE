@@ -3,7 +3,9 @@ Copyright 2026 Helious contributors
 
 Helious application source in this repository is licensed under the Apache License, Version 2.0.
 Third-party components retain their respective licenses and notices. Native distributions
-include THIRD-PARTY-NOTICES.txt; dependency manifests identify the web/server dependencies.
+include THIRD-PARTY-NOTICES.txt. Browser builds generate /app/licenses/THIRD-PARTY-NOTICES.txt
+with license text and upstream source links; font notices are bundled alongside it.
+Dependency manifests identify the separate server dependencies.
 
 The Helious name and logo are not granted as trademarks by this license.
 Marketing website assets and private operator/admin materials are not part of this repository.

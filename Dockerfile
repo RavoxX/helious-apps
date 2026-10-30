@@ -8,6 +8,7 @@ FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
+COPY scripts/browser-notices.mjs ./scripts/browser-notices.mjs
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 # Copy only server runtime dependencies into the final image.

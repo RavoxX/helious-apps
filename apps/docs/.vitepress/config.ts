@@ -18,6 +18,7 @@ export default defineConfig({
           { text: 'Getting started', link: '/getting-started' },
           { text: 'Vaults, notes & search', link: '/knowledge' },
           { text: 'Markdown workspace', link: '/editor' },
+          { text: 'Reading, embeds & media', link: '/reading' },
           { text: 'Daily notes, templates & properties', link: '/authoring' },
           { text: 'Canvas', link: '/canvas' },
           { text: 'Knowledge graph', link: '/graph' },

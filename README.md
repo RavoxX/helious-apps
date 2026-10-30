@@ -9,7 +9,7 @@ Public application and self-hosting source for Helious. The marketing website an
 
 Read [AGENTS.md](AGENTS.md), [desktop setup](apps/docs/desktop.md), [Docker installation](apps/docs/deployment.md) and [security guidance](SECURITY.md). Native desktop previews are built by GitHub Actions; see the desktop guide for feature differences from the browser. No marketing homepage is shipped: the server redirects / to /app/.
 
-The browser workspace includes [daily notes, Markdown templates and typed YAML properties](apps/docs/authoring.md), plus [portable JSON Canvas boards](apps/docs/canvas.md) with cards, connections and conflict-safe saves. Native v0.8.1 does not yet expose these authoring controls; richer media/reading and the plugin API remain in progress.
+The browser workspace includes [daily notes, Markdown templates and typed YAML properties](apps/docs/authoring.md), plus [portable JSON Canvas boards](apps/docs/canvas.md) with cards, connections and conflict-safe saves. It also includes [rich reading/media](apps/docs/reading.md): callouts, highlighted code, math, on-demand diagrams and scoped note/image/audio/PDF embeds. Native v0.8.1 does not yet expose these browser controls; native parity and the sandboxed plugin API remain in progress.
 
 ## Self-host with Docker Compose
 
@@ -86,3 +86,5 @@ If startup fails, check the app/container logs and `/api/health`: missing master
 Helious Apps source is licensed under [Apache 2.0](LICENSE). You may self-host, modify and redistribute it under that license. Preserve the applicable license and notices when redistributing. Third-party libraries/fonts retain their own licenses; native installers include their notices. The Helious name/logo are not licensed as trademarks. The private marketing website and admin/operator materials are outside this repository.
 
 The browser distribution includes the original [Manrope Open Font License](apps/web/public/licenses/Manrope-OFL.txt) at `/app/licenses/Manrope-OFL.txt`.
+
+Browser builds generate `/app/licenses/THIRD-PARTY-NOTICES.txt` with runtime dependency license text and source links. Keep it and the bundled [KaTeX font notice](apps/web/public/licenses/KaTeX-fonts-LICENSE.txt) when redistributing. The build helper is `scripts/browser-notices.mjs`.

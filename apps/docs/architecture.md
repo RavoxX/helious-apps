@@ -83,6 +83,8 @@ Never hydrate secrets into note rendering, export, search, graph, or Markdown sy
 
 ## Build decisions
 
+The browser reading pipeline uses Markdown AST transforms for callouts, scoped headings/footnotes and bounded embeds; lowlight produces escaped React code tokens, and KaTeX runs without trusted commands. Note embeds reuse the existing scoped API and core resolver, restricted to the containing note's Space. Attachment signatures select passive image/audio or local PDF.js canvas viewers. Mermaid is lazy, on-demand, serialized, strict and sanitized before conversion to a Blob image. CSP permits Blob images/media and a same-origin worker while retaining object/frame restrictions. See [reading](./reading) for resource limits and unsupported features. The web build generates third-party license/source notices before Vite; keep its helper in Docker build contexts and Turbo inputs.
+
 Native desktop apps and MCP transports are implemented. This public distribution excludes the separate marketing website and operator/admin service. Platform signing/notarization and a managed Cloud deployment remain separate operational work.
 
 ## Space authorization and version storage

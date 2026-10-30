@@ -1,0 +1,211 @@
+.markdown-reading .reading-code {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 18px 0;
+  overflow: hidden;
+}
+.markdown-reading .reading-code pre {
+  margin: 0;
+  border-radius: 0;
+  max-height: 520px;
+}
+.reading-code-bar,
+.reading-embed-title,
+.reading-pdf-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.reading-code-bar > button {
+  margin-left: auto;
+}
+.markdown-reading
+  :is(
+    .reading-code-bar,
+    .reading-embed-title,
+    .reading-pdf-controls,
+    .reading-attachment,
+    .reading-diagram
+  )
+  button {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  min-height: 34px;
+  border-radius: 5px;
+  font: inherit;
+  cursor: pointer;
+}
+.reading-code .hljs-keyword,
+.reading-code .hljs-selector-tag,
+.reading-code .hljs-literal {
+  color: #b190f2;
+}
+.reading-code .hljs-string,
+.reading-code .hljs-title,
+.reading-code .hljs-section {
+  color: #80c8b3;
+}
+.reading-code .hljs-number,
+.reading-code .hljs-built_in,
+.reading-code .hljs-attr {
+  color: #e3b47c;
+}
+.reading-code .hljs-comment,
+.reading-code .hljs-quote {
+  color: var(--color-muted);
+}
+[data-theme='light'] .reading-code .hljs-keyword,
+[data-theme='light'] .reading-code .hljs-selector-tag,
+[data-theme='light'] .reading-code .hljs-literal {
+  color: #6b3db5;
+}
+[data-theme='light'] .reading-code .hljs-string,
+[data-theme='light'] .reading-code .hljs-title,
+[data-theme='light'] .reading-code .hljs-section {
+  color: #216b56;
+}
+[data-theme='light'] .reading-code .hljs-number,
+[data-theme='light'] .reading-code .hljs-built_in,
+[data-theme='light'] .reading-code .hljs-attr {
+  color: #8d5121;
+}
+.markdown-reading .reading-callout {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 6px;
+  padding: 14px 18px;
+  background: var(--color-panel);
+  margin: 20px 0;
+}
+.reading-callout-title,
+.reading-callout > summary {
+  font-weight: 650;
+  cursor: default;
+}
+.reading-callout > summary {
+  cursor: pointer;
+}
+.reading-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.markdown-reading .callout-warning,
+.markdown-reading .callout-question {
+  border-left-color: #b88d39;
+}
+.markdown-reading .callout-danger,
+.markdown-reading .callout-bug {
+  border-left-color: #bd6262;
+}
+.markdown-reading .callout-success,
+.markdown-reading .callout-tip {
+  border-left-color: #529c75;
+}
+.markdown-reading .reading-note-embed {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 20px 0;
+  min-width: 0;
+}
+.reading-note-embed > .markdown-reading {
+  padding: 16px !important;
+}
+.reading-embed-title {
+  justify-content: space-between;
+  overflow-wrap: anywhere;
+}
+.reading-embed-title span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.markdown-reading .reading-attachment,
+.markdown-reading .reading-diagram {
+  border: 1px solid var(--line);
+  padding: 14px;
+  border-radius: 8px;
+  margin: 20px 0;
+  min-width: 0;
+}
+.reading-attachment figcaption,
+.reading-diagram figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-bottom: 12px;
+}
+.reading-attachment img,
+.reading-diagram img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 10px auto;
+}
+.reading-attachment audio {
+  width: 100%;
+  margin: 12px 0;
+}
+.reading-pdf canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 10px auto;
+  background: white;
+}
+.reading-diagram details {
+  margin-top: 12px;
+}
+.reading-diagram-stage {
+  position: fixed;
+  left: -100000px;
+  top: 0;
+  width: 1200px;
+  pointer-events: none;
+}
+.markdown-reading .katex-display {
+  overflow: auto hidden;
+  padding: 12px 0;
+  max-width: 100%;
+}
+.markdown-reading .katex {
+  font-size: 1.05em;
+}
+.markdown-reading table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.markdown-reading [id] {
+  scroll-margin-top: 24px;
+}
+.reading-unavailable {
+  display: block;
+  font-size: 12px;
+  color: var(--color-muted);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 10px;
+}
+.reading-pdf-controls button:disabled {
+  opacity: 0.45;
+}
+@media (max-width: 700px) {
+  .markdown-reading
+    :is(
+      .reading-code-bar,
+      .reading-embed-title,
+      .reading-pdf-controls,
+      .reading-attachment,
+      .reading-diagram
+    )
+    button {
+    min-height: 44px;
+  }
+}
