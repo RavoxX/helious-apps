@@ -37,6 +37,7 @@ enum Destination: String, CaseIterable, Identifiable {
     @Published var fontSize = 16.0
     @Published var wrap = true
     @Published var showNewNote = false
+    @Published var showInspector = true
     @Published var newPath = ""
     @Published var showDraftAlert = false
     @Published var confirmDelete = false

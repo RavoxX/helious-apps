@@ -254,6 +254,14 @@ fn native_navigation_settings_and_local_save_are_functional() {
             .unwrap()
             .save(std::path::Path::new(&path).join("windows-account.png"))
             .unwrap();
+        harness.state_mut().page = Page::Settings;
+        harness.state_mut().theme = "light".into();
+        harness.step();
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-settings-light.png"))
+            .unwrap();
     }
     harness.state_mut().page = Page::Workspace;
     harness.state_mut().new_path = "Created.md".into();

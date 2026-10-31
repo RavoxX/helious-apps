@@ -13,7 +13,6 @@ pub struct ExtensionState {
 }
 impl HeliousApp {
     pub fn extension_manager(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Extensions");
         ui.label("API 1 runs bounded data-only commands, with no scripts, network, filesystem or secret access. Installation grants access to the editor draft on this device. Commands only propose edits; apply and save separately.");
         if ui
             .add_enabled(

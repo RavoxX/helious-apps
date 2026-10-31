@@ -59,7 +59,7 @@ const manifest = {
   schema: 1,
   version,
   notes:
-    'Native authoring, Canvas, rich reading/media, permission-reviewed draft extensions and signed updates.',
+    'Redesigned native navigation, grouped vaults and notes, a focused editor inspector, improved themes and settings, and signed updates.',
   windows: entry('.exe'),
   macos: entry('.zip'),
 };

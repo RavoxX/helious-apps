@@ -3,49 +3,115 @@ import AppKit
 struct AccountView: View {
     @EnvironmentObject var store: WorkspaceStore
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                Text("Account").font(.largeTitle.bold())
-                if store.user.isEmpty {
-                    Text("Sign in to access your server vaults. Local folders remain available offline.").foregroundStyle(.secondary)
-                    Picker("Connection", selection: $store.customServer) {Text("Helious Cloud").tag(false); Text("Self-hosted server").tag(true)}.pickerStyle(.segmented)
-                    if store.customServer {TextField("Server address", text: $store.origin).textFieldStyle(.roundedBorder)} else {Text("helious.work · connection required").font(.callout).foregroundStyle(.secondary)}
-                    Form {
-                        TextField("Email address", text: $store.email).textContentType(.username)
-                        SecureField("Password", text: $store.password).textContentType(.password)
-                        TextField("Authenticator or recovery code", text: $store.factor)
-                    }.formStyle(.grouped).frame(height: 170)
-                    Button(store.busy ? "Signing in…" : "Sign in") {store.login()}.buttonStyle(.borderedProminent).disabled(store.busy || store.email.isEmpty || store.password.isEmpty)
-                    HStack {Button("Create account") {store.openWeb("/app/")}; Button("Forgot password?") {store.openWeb("/forgot-password")}}
-                    Text("Sessions are kept in your macOS Keychain. Your password is never saved. If Cloud is unavailable, open a local vault from the sidebar.").font(.callout).foregroundStyle(.secondary)
-                } else {
-                    Text(store.user["name"] as? String ?? "Your account").font(.title2)
-                    Text(store.user["email"] as? String ?? ""); Text(store.origin).foregroundStyle(.secondary)
-                    HStack {Button("Refresh Cloud vaults") {store.api("cloud_vaults", "/api/vaults")}; Button("Sign out", role: .destructive) {store.guardDraft {store.send("logout", ["operation": "logout"])}}}
-                    Divider(); Text("Cloud vaults").font(.headline)
-                    ForEach(store.cloudVaults) {vault in Button(vault.name, systemImage: "cloud") {store.openCloud(vault)}}
-                    HStack {TextField("New Cloud vault name", text: $store.newPath); Button("Create vault") {store.api("create_vault", "/api/vaults", method: "POST", body: ["name": store.newPath])}.disabled(store.newPath.isEmpty || store.busy)}
-                    Divider(); Text("Security & access").font(.headline)
-                    Text(store.user["totpEnabled"] as? Bool == true ? "Two-factor authentication is enabled." : "Two-factor authentication is not enabled.")
-                    Text("Manage password, sessions, two-factor authentication, secrets and agent tokens in your server's secure account panel.").foregroundStyle(.secondary)
-                    Button("Open security settings in browser") {store.openWeb("/app/")}
+        Form {
+            if store.user.isEmpty {
+                Section {
+                    Picker("Connection", selection: $store.customServer) {Text("Helious Cloud").tag(false); Text("Self-hosted server").tag(true)}
+                        .pickerStyle(.segmented)
+                    if store.customServer {
+                        TextField("Server address", text: $store.origin)
+                    } else {
+                        LabeledContent("Server", value: "helious.work")
+                    }
+                } header: {
+                    Text("Sign in")
+                } footer: {
+                    Text("Sign in to reach your server vaults. Local folders stay available offline.")
                 }
-            }.frame(maxWidth: 540, alignment: .leading).padding(36).frame(maxWidth: .infinity, alignment: .leading)
+                Section {
+                    TextField("Email address", text: $store.email).textContentType(.username)
+                    SecureField("Password", text: $store.password).textContentType(.password)
+                    TextField("Authenticator or recovery code", text: $store.factor)
+                } footer: {
+                    Text("Sessions are kept in your macOS Keychain. Your password is never saved.")
+                }
+                Section {
+                    HStack {
+                        Button(store.busy ? "Signing in…" : "Sign in") {store.login()}
+                            .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                            .disabled(store.busy || store.email.isEmpty || store.password.isEmpty)
+                        Spacer()
+                        Button("Create account") {store.openWeb("/app/")}.buttonStyle(.link)
+                        Button("Forgot password?") {store.openWeb("/forgot-password")}.buttonStyle(.link)
+                    }
+                }
+            } else {
+                Section("Signed in") {
+                    LabeledContent("Name", value: store.user["name"] as? String ?? "")
+                    LabeledContent("Email", value: store.user["email"] as? String ?? "")
+                    LabeledContent("Server", value: store.origin)
+                    HStack {
+                        Button("Refresh Cloud vaults") {store.api("cloud_vaults", "/api/vaults")}
+                        Spacer()
+                        Button("Sign out", role: .destructive) {store.guardDraft {store.send("logout", ["operation": "logout"])}}
+                    }
+                }
+                Section("Cloud vaults") {
+                    if store.cloudVaults.isEmpty {Text("No Cloud vaults yet.").foregroundStyle(.secondary)}
+                    ForEach(store.cloudVaults) {vault in
+                        Button {store.openCloud(vault)} label: {Label(vault.name, systemImage: "cloud")}.buttonStyle(.link)
+                    }
+                    HStack {
+                        TextField("New Cloud vault name", text: $store.newPath)
+                        Button("Create vault") {store.api("create_vault", "/api/vaults", method: "POST", body: ["name": store.newPath])}
+                            .disabled(store.newPath.isEmpty || store.busy)
+                    }
+                }
+                Section {
+                    LabeledContent("Two-factor authentication", value: store.user["totpEnabled"] as? Bool == true ? "On" : "Off")
+                    Button("Open security settings in browser") {store.openWeb("/app/")}
+                } header: {
+                    Text("Security & access")
+                } footer: {
+                    Text("Password, sessions, two-factor authentication, secrets and agent tokens are managed in your server's secure account pages.")
+                }
+            }
         }
+        .formStyle(.grouped)
+        .frame(maxWidth: 640)
+        .frame(maxWidth: .infinity)
     }
 }
+/// Standard macOS Settings window: General, Updates and Extensions tabs.
 struct SettingsView: View {
     @EnvironmentObject var store: WorkspaceStore
     var body: some View {
+        TabView {
+            GeneralSettings().tabItem {Label("General", systemImage: "gearshape")}
+            Form {UpdateSettings(updates: store.updates)}.formStyle(.grouped)
+                .tabItem {Label("Updates", systemImage: "arrow.down.circle")}
+            Form {Section("Extensions") {ExtensionsManager(model: store.extensions)}}.formStyle(.grouped)
+                .tabItem {Label("Extensions", systemImage: "puzzlepiece.extension")}
+        }
+    }
+}
+struct GeneralSettings: View {
+    @EnvironmentObject var store: WorkspaceStore
+    private var version: String {Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development build"}
+    var body: some View {
         Form {
-            Section("Appearance") {Picker("Theme", selection: $store.appearance) {Text("Dark").tag("dark"); Text("Light").tag("light"); Text("System").tag("system")}.pickerStyle(.segmented)}
-            Section("Editor") {Slider(value: $store.fontSize, in: 12...28, step: 1) {Text("Text size: \(Int(store.fontSize))")}; Toggle("Wrap long lines", isOn: $store.wrap)}
-            Section("Extensions") {ExtensionsManager(model: store.extensions)}
-            Section("Storage") {Text("Back up your Markdown folders with their .helious history and sync directory.").font(.callout).foregroundStyle(.secondary); Button("Open desktop settings folder") {NSWorkspace.shared.open(store.dataFolder)}}
-            UpdateSettings(updates: store.updates)
-            Section("About") {Text("Helious 0.9.0 · SwiftUI + native macOS controls"); Text("Vault and session operations use the shared Rust engine. Sessions stay in Keychain.").font(.callout).foregroundStyle(.secondary)}
-            Button("Save settings") {store.settingsSave()}.disabled(store.busy)
-        }.formStyle(.grouped)
+            Section("Appearance") {
+                Picker("Theme", selection: $store.appearance) {Text("Dark").tag("dark"); Text("Light").tag("light"); Text("Match macOS").tag("system")}
+                    .pickerStyle(.segmented)
+            }
+            Section("Editor") {
+                Slider(value: $store.fontSize, in: 12...28, step: 1) {Text("Text size: \(Int(store.fontSize)) pt")}
+                Toggle("Wrap long lines", isOn: $store.wrap)
+            }
+            Section {
+                HStack {Spacer(); Button("Save settings") {store.settingsSave()}.buttonStyle(.borderedProminent).disabled(store.busy)}
+            }
+            Section("Storage") {
+                Text("Back up your Markdown folders with their .helious history and sync directory.").font(.callout).foregroundStyle(.secondary)
+                Button("Open desktop settings folder") {NSWorkspace.shared.open(store.dataFolder)}
+            }
+            Section("About") {
+                LabeledContent("Version", value: "Helious \(version)")
+                Text("SwiftUI with native macOS controls. Vault and session operations use the shared Rust engine; sessions stay in Keychain.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 struct UpdateSettings: View {
@@ -65,7 +131,7 @@ struct SyncView: View {
     var hasPersonal: Bool {store.mappings.contains {local, remote in store.spaces.contains {$0.id == local && $0.kind == "personal"} || store.remoteSpaces.contains {$0.id == remote && $0.kind == "personal"}}}
     var body: some View {
         Form {
-            Section {Text("Sync").font(.largeTitle.bold()); Text("Pair a local vault with selected server Spaces. Nothing is selected automatically.").foregroundStyle(.secondary)}
+            Section {Text("Pair a local vault with selected server Spaces. Nothing is selected automatically.").foregroundStyle(.secondary)} header: {Text("Sync").font(.title2.weight(.semibold))}
             if store.source != "local" || store.vault == nil {Text("Open a local folder, then return here to configure its sync.")}
             else if store.user.isEmpty {Button("Sign in to Cloud or a self-hosted server") {store.destination = .account}}
             else if !store.syncConfig.isEmpty {

@@ -16,6 +16,10 @@ Update signing is configured separately from platform signing. Windows Authentic
 
 ## Navigation
 
+The 0.9.3 layout groups local and Cloud vaults in the sidebar, with Workspace, Graph, Canvas and Sync above and Account/Settings below. With no vault open, choose a local folder or sign in. Notes are grouped by folder. The editor keeps its title, saved state and Save action visible; secondary Space, properties, extension and version-history controls live in the Inspector. Windows supports explicit light/dark/system appearance; macOS uses its native sidebar, toolbar and tabbed Settings window. Existing vaults, sync grants and credential storage are unchanged.
+
+Both apps share one layout. The **sidebar** lists the destinations below, then your vaults (**On this device / On this Mac** with _Open folder…_, and **Helious Cloud**), with **Account** and **Settings** at the bottom. On macOS the sidebar ends in an account bar showing who is signed in, with a Settings button beside it. In **Workspace**, notes are grouped by folder in a list with search and a **+** for new notes. The editor shows the note title, its path and whether it is saved, the **Source / Reading / Split** switch and one primary **Save** button. Everything else about the note opens in the **Inspector** on the right: its Space, reload/discard/delete, **Properties**, **Extensions** and **Version history**. Hide or show it with the Inspector button (toolbar on macOS). With no vault open, a welcome screen offers a local folder or Helious Cloud.
+
 - **Workspace:** local/server vaults, note search/creation, Markdown source, reading/split preview, explicit save and history drafts.
 - **Canvas:** portable text/file/link/group boards, connections, history of draft edits, export and guarded saves.
 - **Graph:** actual notes/links, bounded spatial-grid layout, pan/zoom, search and hover neighbor highlighting. The browser retains more extensive graph/analytics controls.

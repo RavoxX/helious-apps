@@ -96,7 +96,7 @@ impl HeliousApp {
                     }
                 }
             }
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label("Property name");
                 ui.text_edit_singleline(&mut self.authoring.property);
                 egui::ComboBox::from_id_salt("property-type")
@@ -107,7 +107,7 @@ impl HeliousApp {
                         }
                     });
             });
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label("Property value");
                 ui.text_edit_singleline(&mut self.authoring.value);
                 if ui

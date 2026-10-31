@@ -71,6 +71,8 @@ pub struct HeliousApp {
     pub canvas: crate::canvas::CanvasState,
     pub reading: crate::reading::ReadingState,
     pub extensions: crate::extensions::ExtensionState,
+    /// Right-hand note inspector (Space, properties, extensions, history).
+    pub inspector: bool,
 }
 pub fn string<'a>(value: &'a Value, key: &str) -> &'a str {
     value[key].as_str().unwrap_or("")
@@ -167,6 +169,7 @@ impl HeliousApp {
             canvas: crate::canvas::CanvasState::default(),
             reading: crate::reading::ReadingState::default(),
             extensions: crate::extensions::ExtensionState::default(),
+            inspector: true,
         };
         app.request("status", json!({"operation":"status"}));
         app
@@ -278,27 +281,7 @@ impl HeliousApp {
             _ => egui::ThemePreference::Dark,
         });
         let mut style = (*ctx.global_style()).clone();
-        style.spacing.item_spacing = egui::vec2(10.0, 10.0);
-        style.spacing.button_padding = egui::vec2(12.0, 8.0);
-        style
-            .text_styles
-            .insert(egui::TextStyle::Body, egui::FontId::proportional(15.0));
-        style
-            .text_styles
-            .insert(egui::TextStyle::Heading, egui::FontId::proportional(25.0));
-        style
-            .text_styles
-            .insert(egui::TextStyle::Button, egui::FontId::proportional(14.0));
-        if style.visuals.dark_mode {
-            style.visuals.panel_fill = Color32::from_rgb(16, 16, 16);
-            style.visuals.window_fill = Color32::from_rgb(21, 21, 21);
-            style.visuals.extreme_bg_color = Color32::from_rgb(10, 10, 10);
-            style.visuals.faint_bg_color = Color32::from_rgb(26, 26, 26);
-            style.visuals.widgets.noninteractive.bg_stroke.color = Color32::from_gray(48);
-            style.visuals.selection.bg_fill = Color32::from_rgb(29, 70, 110);
-            style.visuals.hyperlink_color = Color32::from_rgb(115, 185, 255);
-            style.visuals.weak_text_color = Some(Color32::from_gray(164));
-        }
+        crate::chrome::style(&mut style);
         ctx.set_global_style(style);
     }
     fn receive(&mut self) {
@@ -567,6 +550,21 @@ impl HeliousApp {
         }
     }
 }
+impl HeliousApp {
+    /// Switches destination and loads what that page needs.
+    fn go(&mut self, page: Page) {
+        self.page = page;
+        if page == Page::Canvas && !self.vault.is_null() {
+            self.request("canvas_list", self.scope("canvas_list"));
+        }
+        if page == Page::Graph && !self.vault.is_null() {
+            self.request("graph", self.scope("graph"));
+        }
+        if page == Page::Sync && !self.me.is_null() {
+            self.api("server_vaults", "/api/vaults".into(), "GET", Value::Null);
+        }
+    }
+}
 impl eframe::App for HeliousApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.receive();
@@ -599,37 +597,143 @@ impl eframe::App for HeliousApp {
             self.request("check_update", json!({"operation":"check_update"}));
         }
         ctx.request_repaint_after(Duration::from_secs(1));
-        egui::Panel::top("app-header")
-            .exact_size(66.0)
+        let colors = crate::chrome::palette(ctx.global_style().visuals.dark_mode);
+        egui::Panel::left("navigation")
+            .exact_size(236.0)
+            .frame(
+                egui::Frame::new()
+                    .fill(colors.sidebar)
+                    .inner_margin(egui::Margin::symmetric(10, 14)),
+            )
             .show(ui, |ui| {
-                ui.horizontal_centered(|ui| {
-                    ui.add_space(14.0);
-                    ui.image((self.logo.id(), egui::vec2(30.0, 30.0)));
-                    ui.label(RichText::new("helious.").size(23.0).strong());
-                    ui.add_space(25.0);
-                    ui.label(if self.vault.is_null() {
-                        "Your knowledge workspace"
-                    } else {
-                        string(&self.vault, "name")
-                    });
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.add_space(14.0);
-                        if ui
-                            .button(if self.me.is_null() {
-                                "Sign in"
-                            } else {
-                                string(&self.me, "name")
-                            })
+                ui.horizontal(|ui| {
+                    ui.add_space(6.0);
+                    ui.image((self.logo.id(), egui::vec2(28.0, 28.0)));
+                    ui.label(RichText::new("helious.").size(22.0).strong());
+                });
+                ui.add_space(12.0);
+                // Account and settings sit at the bottom, like the browser workspace.
+                egui::Panel::bottom("navigation-account")
+                    .frame(egui::Frame::NONE)
+                    .show_separator_line(false)
+                    .show(ui, |ui| {
+                        ui.separator();
+                        for (page, label) in
+                            [(Page::Account, "Account"), (Page::Settings, "Settings")]
+                        {
+                            if crate::chrome::nav_item(ui, self.page == page, label).clicked() {
+                                self.go(page);
+                            }
+                        }
+                        if crate::chrome::nav_item(ui, false, "Help & documentation")
+                            .on_hover_text("Opens the desktop guide in your browser")
                             .clicked()
                         {
-                            self.page = Page::Account;
+                            let _ = open::that(format!(
+                                "{}/docs/desktop",
+                                helious_native::CLOUD_ORIGIN
+                            ));
                         }
-                        if ui.button("Settings").clicked() {
-                            self.page = Page::Settings;
+                    });
+                egui::ScrollArea::vertical()
+                    .id_salt("navigation-scroll")
+                    .show(ui, |ui| {
+                        for (page, label) in [
+                            (Page::Workspace, "Workspace"),
+                            (Page::Graph, "Graph"),
+                            (Page::Canvas, "Canvas"),
+                            (Page::Sync, "Sync"),
+                        ] {
+                            if crate::chrome::nav_item(ui, self.page == page, label).clicked() {
+                                self.go(page);
+                            }
+                        }
+                        crate::chrome::section_label(ui, "ON THIS DEVICE");
+                        let recent = self.status["recent"]
+                            .as_array()
+                            .cloned()
+                            .unwrap_or_default();
+                        for item in recent.iter().take(8) {
+                            let selected = self.source == "local" && self.vault["id"] == item["id"];
+                            if crate::chrome::nav_item(ui, selected, string(item, "name"))
+                                .on_hover_text(string(item, "path"))
+                                .clicked()
+                            {
+                                self.navigate(json!({"operation":"open_recent","id":item["id"]}));
+                            }
+                        }
+                        if crate::chrome::nav_item(ui, false, "Open folder…")
+                            .on_hover_text("Open or create a local Markdown vault (Ctrl+O)")
+                            .clicked()
+                        {
+                            self.open_folder();
+                        }
+                        crate::chrome::section_label(ui, "HELIOUS CLOUD");
+                        if self.me.is_null() {
+                            if crate::chrome::nav_item(ui, false, "Sign in to Helious Cloud")
+                                .clicked()
+                            {
+                                self.go(Page::Account);
+                            }
+                        } else {
+                            for item in self.server_vaults.clone() {
+                                let selected =
+                                    self.source == "server" && self.vault["id"] == item["id"];
+                                if crate::chrome::nav_item(ui, selected, string(&item, "name"))
+                                    .clicked()
+                                {
+                                    self.navigate(json!({"operation":"open_server","vault":item}));
+                                }
+                            }
+                            if self.server_vaults.is_empty() {
+                                ui.horizontal(|ui| {
+                                    ui.add_space(14.0);
+                                    ui.weak("No Cloud vaults yet.");
+                                });
+                            }
+                        }
+                    });
+            });
+        egui::Panel::top("app-header")
+            .exact_size(52.0)
+            .show(ui, |ui| {
+                ui.horizontal_centered(|ui| {
+                    ui.add_space(12.0);
+                    let title = match self.page {
+                        Page::Workspace => "Workspace",
+                        Page::Graph => "Graph",
+                        Page::Canvas => "Canvas",
+                        Page::Sync => "Sync",
+                        Page::Account => "Account",
+                        Page::Settings => "Settings",
+                    };
+                    ui.label(RichText::new(title).size(15.0).strong());
+                    let in_vault = matches!(
+                        self.page,
+                        Page::Workspace | Page::Graph | Page::Canvas | Page::Sync
+                    );
+                    if in_vault && !self.vault.is_null() {
+                        ui.weak("›");
+                        ui.label(string(&self.vault, "name"));
+                    }
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.add_space(12.0);
+                        // The account chip keeps sign-in state visible from every page.
+                        let account = if self.me.is_null() {
+                            "Sign in".to_string()
+                        } else {
+                            string(&self.me, "name").to_string()
+                        };
+                        if ui
+                            .button(account)
+                            .on_hover_text("Open your account")
+                            .clicked()
+                        {
+                            self.go(Page::Account);
                         }
                         if self.pending.is_some() {
                             ui.spinner();
-                        } else {
+                        } else if !self.vault.is_null() {
                             ui.weak(if self.source == "local" {
                                 "On this device"
                             } else {
@@ -642,9 +746,9 @@ impl eframe::App for HeliousApp {
         egui::Panel::bottom("status").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.small(if self.dirty() {
-                    "Unsaved draft"
+                    "Unsaved draft".to_string()
                 } else {
-                    "Helious native · 0.9.0"
+                    format!("Helious {}", env!("CARGO_PKG_VERSION"))
                 });
                 if !self.message.is_empty() {
                     ui.separator();
@@ -652,84 +756,6 @@ impl eframe::App for HeliousApp {
                 }
             });
         });
-        egui::Panel::left("navigation")
-            .exact_size(206.0)
-            .show(ui, |ui| {
-                ui.add_space(18.0);
-                for (page, label) in [
-                    (Page::Workspace, "Workspace"),
-                    (Page::Graph, "Graph"),
-                    (Page::Canvas, "Canvas"),
-                    (Page::Sync, "Sync"),
-                    (Page::Account, "Account"),
-                    (Page::Settings, "Settings"),
-                ] {
-                    if ui
-                        .add_sized(
-                            [182.0, 38.0],
-                            egui::Button::selectable(self.page == page, label),
-                        )
-                        .clicked()
-                    {
-                        self.page = page;
-                        if page == Page::Canvas && !self.vault.is_null() {
-                            self.request("canvas_list", self.scope("canvas_list"));
-                        }
-                        if page == Page::Graph && !self.vault.is_null() {
-                            self.request("graph", self.scope("graph"));
-                        }
-                        if page == Page::Sync && !self.me.is_null() {
-                            self.api("server_vaults", "/api/vaults".into(), "GET", Value::Null);
-                        }
-                    }
-                }
-                ui.add_space(22.0);
-                ui.weak("LOCAL VAULTS");
-                if ui.button("Open folder…").clicked() {
-                    self.open_folder();
-                }
-                let recent = self.status["recent"]
-                    .as_array()
-                    .cloned()
-                    .unwrap_or_default();
-                for item in recent.iter().take(8) {
-                    if ui
-                        .selectable_label(
-                            self.source == "local" && self.vault["id"] == item["id"],
-                            string(item, "name"),
-                        )
-                        .on_hover_text(string(item, "path"))
-                        .clicked()
-                    {
-                        self.navigate(json!({"operation":"open_recent","id":item["id"]}));
-                    }
-                }
-                ui.add_space(20.0);
-                ui.weak("CLOUD VAULTS");
-                if self.me.is_null() {
-                    if ui.button("Sign in to Helious Cloud").clicked() {
-                        self.page = Page::Account;
-                    }
-                } else {
-                    for item in self.server_vaults.clone() {
-                        if ui
-                            .selectable_label(
-                                self.source == "server" && self.vault["id"] == item["id"],
-                                string(&item, "name"),
-                            )
-                            .clicked()
-                        {
-                            self.navigate(json!({"operation":"open_server","vault":item}));
-                        }
-                    }
-                }
-                ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                    if ui.link("Help & documentation").clicked() {
-                        let _ =
-                            open::that(format!("{}/docs/desktop", helious_native::CLOUD_ORIGIN));
-                    }
-                });
-            });
         egui::CentralPanel::default().show(ui, |ui| {
             if !self.error.is_empty() {
                 egui::Frame::group(ui.style()).show(ui, |ui| {
@@ -755,12 +781,16 @@ impl eframe::App for HeliousApp {
                         .id_salt("destination-page")
                         .show(ui, |ui| {
                             egui::Frame::new()
-                                .inner_margin(egui::Margin::symmetric(26, 12))
-                                .show(ui, |ui| match self.page {
-                                    Page::Account => self.account(ui),
-                                    Page::Settings => self.settings(ui),
-                                    Page::Sync => self.sync(ui),
-                                    _ => {}
+                                .inner_margin(egui::Margin::symmetric(32, 12))
+                                .show(ui, |ui| {
+                                    // Readable line length for forms and settings.
+                                    ui.set_max_width(760.0);
+                                    match self.page {
+                                        Page::Account => self.account(ui),
+                                        Page::Settings => self.settings(ui),
+                                        Page::Sync => self.sync(ui),
+                                        _ => {}
+                                    }
                                 });
                         });
                 }
