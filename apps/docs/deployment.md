@@ -1,5 +1,7 @@
 # Deployment, upgrades and backups
 
+The built documentation keeps a strict `script-src 'self'` policy: VitePress metadata and its early theme/platform checks are emitted as local JavaScript files. Rebuild the docs when updating the server. Verify the Search button, Ctrl/Cmd+K, sidebar navigation, theme persistence and a direct page refresh; static page text alone does not prove that documentation controls initialized. Do not enable arbitrary inline scripts to make the controls work.
+
 Review the [operations and incident recovery checklist](./operations) before accepting real accounts, and [dependencies/notices](./dependencies) when distributing images. Docker build contexts exclude local vault/cache state, native build targets and environment variants; keep private deployment secrets outside tracked source.
 
 ## One origin, HTTPS

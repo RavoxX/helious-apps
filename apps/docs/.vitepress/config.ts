@@ -1,13 +1,17 @@
 import { defineConfig } from 'vitepress';
+import { externalizeThemeScripts } from './csp.js';
 export default defineConfig({
   title: 'Helious',
   description: 'Private knowledge, connected thinking.',
   base: '/docs/',
   cleanUrls: true,
+  metaChunk: true,
+  transformHtml: (html, _id, { siteConfig }) =>
+    externalizeThemeScripts(html, siteConfig.outDir, siteConfig.site.base),
   head: [['link', { rel: 'icon', href: '/app/helious-logo.png' }]],
   themeConfig: {
     nav: [
-      { text: 'Home', link: '/' },
+      { text: 'Documentation', link: '/' },
       { text: 'Open app', link: '/../app/', target: '_self' },
     ],
     sidebar: [
