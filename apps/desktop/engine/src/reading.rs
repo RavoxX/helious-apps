@@ -79,7 +79,9 @@ pub fn document(source: &str) -> Result<Vec<Block>> {
     let wiki = regex::Regex::new(r"(!?)\[\[([^\]\n]+)\]\]").expect("wiki expression");
     let callout_marker =
         regex::Regex::new(r"^\[!(\w+)\]([+-])?[\t ]*([^\n]*)").expect("callout marker");
-    for (event, range) in Parser::new_ext(source, options).into_offset_iter() {
+    for (event, range) in pulldown_cmark::TextMergeWithOffset::new(
+        Parser::new_ext(source, options).into_offset_iter(),
+    ) {
         count += 1;
         if count > 25000 || stack.len() > 40 {
             return Err("This preview is too complex. Use Source mode.".into());
@@ -200,17 +202,24 @@ pub fn document(source: &str) -> Result<Vec<Block>> {
                                         _ => "",
                                     }
                                     .into();
-                                    let body = text[c.get(0).unwrap().end()..]
-                                        .trim_start_matches('\n')
-                                        .to_string();
-                                    first.spans = if body.is_empty() {
-                                        vec![]
-                                    } else {
-                                        vec![Span {
-                                            text: body,
-                                            ..Default::default()
-                                        }]
-                                    };
+                                    let mut skip = c.get(0).unwrap().end();
+                                    while text[skip..].starts_with('\n') {
+                                        skip += 1;
+                                    }
+                                    first.spans = first
+                                        .spans
+                                        .drain(..)
+                                        .filter_map(|mut span| {
+                                            if skip >= span.text.len() {
+                                                skip -= span.text.len();
+                                                None
+                                            } else {
+                                                span.text = span.text[skip..].to_string();
+                                                skip = 0;
+                                                Some(span)
+                                            }
+                                        })
+                                        .collect();
                                 }
                             }
                         }
@@ -729,6 +738,21 @@ pub fn fragment(source: &str, fragment: &str) -> Result<String> {
 mod tests {
     use super::*;
     #[test]
+    fn wiki_tokens_merge_parser_text_but_preserve_escaped_and_code_literals() {
+        let blocks=document(r"Visible [[Runbook|Guide]] and ![[Plan#Decision]]. Escaped \[[Literal]] and `[[Code]]`.").unwrap();
+        let spans: Vec<_> = blocks.iter().flat_map(|b| b.spans.iter()).collect();
+        assert!(spans
+            .iter()
+            .any(|s| s.target == "Runbook" && s.text == "Guide"));
+        assert!(!spans
+            .iter()
+            .any(|s| s.target == "Literal" || s.target == "Code"));
+        assert!(blocks
+            .iter()
+            .flat_map(|b| b.children.iter())
+            .any(|b| b.kind == "embed" && b.target == "Plan#Decision"));
+    }
+    #[test]
     fn fragments_select_sections_list_items_and_standalone_blocks() {
         assert_eq!(
             fragment(
@@ -757,6 +781,15 @@ mod tests {
         assert!(!encoded.contains("hidden"));
         assert!(!encoded.contains("not rendered"));
         assert!(!encoded.contains("{{secret:"));
+        let linked = document("> [!TIP]- Context\n> Keep **bold** and [[Runbook]].").unwrap();
+        assert!(linked[0].children[0]
+            .spans
+            .iter()
+            .any(|s| s.target == "Runbook"));
+        assert!(linked[0].children[0]
+            .spans
+            .iter()
+            .any(|s| s.bold && s.text == "bold"));
         assert!(encoded.contains("callout"));
         assert!(encoded.contains("Plan#Heading"));
         assert!(encoded.contains("☑"));
