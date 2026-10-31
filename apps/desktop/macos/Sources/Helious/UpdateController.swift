@@ -13,6 +13,9 @@ import Sparkle
     func start() async {
         guard !startupRequested else {return}
         startupRequested = true
+        // Respect stored preferences even when startup discovery is offline.
+        automaticChecks = controller.updater.automaticallyChecksForUpdates
+        automaticDownloads = controller.updater.automaticallyDownloadsUpdates
         await discover(manual: false)
         // GitHub's /latest endpoint excludes prereleases. Refresh the selected
         // signed feed while running instead of pinning automatic checks to the
@@ -21,6 +24,10 @@ import Sparkle
             while !Task.isCancelled {
                 do {try await Task.sleep(nanoseconds: 900_000_000_000)} catch {return}
                 guard !Task.isCancelled, let self else {return}
+                // Sparkle can change these via its permission prompt as well
+                // as our Settings scene; its persisted state is authoritative.
+                self.automaticChecks = self.controller.updater.automaticallyChecksForUpdates
+                self.automaticDownloads = self.controller.updater.automaticallyDownloadsUpdates
                 if self.automaticChecks {await self.discover(manual: false)}
             }
         }
@@ -46,7 +53,6 @@ import Sparkle
     }
     func updaterShouldRelaunchApplication(_ updater: SPUUpdater) -> Bool {store?.dirty != true}
     func preferencesChanged() {
-        guard started else {return}
         controller.updater.automaticallyChecksForUpdates = automaticChecks
         controller.updater.automaticallyDownloadsUpdates = automaticDownloads
     }
