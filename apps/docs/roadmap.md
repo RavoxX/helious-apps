@@ -2,7 +2,7 @@
 
 The original phases implemented accounts/recovery, Markdown/link handling, the browser editor, graph/analytics, Spaces/history, encrypted secrets/MFA and scoped MCP/OAuth. Desktop local folders, watching and selected-Space sync followed.
 
-The native **v0.9.1 prerelease** is available for Windows Rust/egui and macOS SwiftUI, with account/settings navigation and signed GitHub updating. Existing 0.8.0 installations need one manual upgrade. Advanced browser features continue to be ported; see the desktop guide for differences and signing limits.
+The native **v0.9.2 prerelease** is available for Windows Rust/egui and macOS SwiftUI, with account/settings navigation and signed GitHub updating. Existing 0.8.0 installations need one manual upgrade. Advanced browser features continue to be ported; see the desktop guide for differences and signing limits.
 
 Registration supports an adult self-declaration and versioned terms. Account settings include profile correction, private portable export and queued permanent deletion; see [your account and data](./account-data). Instance policies, provider contracts, backup/log retention and deployment remain operator responsibilities.
 
@@ -11,3 +11,5 @@ Phase 9 browser milestones add daily notes, Markdown templates, typed YAML prope
 Public managed Cloud deployment, trusted platform signing/notarization and final hardening are separate operational work. This repository does not ship the marketing homepage.
 
 Phase 10 has delivered a static source hardening pass, the native 0.9.1 path/renderer patch, runtime dependency updates, advisory CI, broader distribution notices and isolated self-host startup/restart checks. See [operations](./operations) and [dependency review](./dependencies) for exact scope and remaining launch/maintenance work.
+
+The 0.9.2 native follow-up refreshes macOS release discovery while automatic checks are enabled and preserves Sparkle preferences during offline startup. Its universal macOS/Windows builds and signed update artifacts are verified; interactive Mac GUI/timer execution remains a separate platform check.
