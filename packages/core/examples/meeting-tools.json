@@ -1,0 +1,12 @@
+{
+  "api": 1,
+  "id": "meeting-tools",
+  "name": "Meeting tools",
+  "version": "1.0.0",
+  "description": "A timestamped checklist and a read-only word count.",
+  "permissions": ["editor:read", "editor:write"],
+  "commands": [
+    {"id": "checklist", "name": "Append meeting checklist", "steps": [{"op": "append", "text": "\n\n## Meeting · {{date}} {{time}}\n\n- [ ] Decisions\n- [ ] Next steps\n"}]},
+    {"id": "words", "name": "Count words", "steps": [{"op": "countWords"}]}
+  ]
+}

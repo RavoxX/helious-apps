@@ -2,6 +2,7 @@
 mod app;
 mod authoring;
 mod canvas;
+mod extensions;
 mod graph;
 mod reading;
 mod screens;

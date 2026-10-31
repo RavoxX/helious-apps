@@ -14,6 +14,7 @@ struct Registry {
     recent: Vec<Value>,
     server: Option<String>,
     settings: Value,
+    extensions: Vec<crate::extensions::Installed>,
 }
 pub struct Engine {
     folder: PathBuf,
@@ -154,6 +155,70 @@ impl Engine {
     pub fn execute(&mut self, req: Value) -> Result<Value> {
         let op = field(&req, "operation")?;
         match op {
+            "validate_extension" => {
+                Ok(json!({"manifest":crate::extensions::validate(req["manifest"].clone())?}))
+            }
+            "extension_example" => Ok(
+                json!({"manifest":serde_json::from_str::<Value>(crate::extensions::EXAMPLE).map_err(|_|"Invalid built-in example.")?}),
+            ),
+            "extensions" => Ok(json!({"extensions":self.registry.extensions})),
+            "install_extension" => {
+                if req["consent"] != true {
+                    return Err("Review and grant the requested editor permissions first.".into());
+                }
+                let manifest = crate::extensions::validate(req["manifest"].clone())?;
+                if self.registry.extensions.len() >= 10
+                    && !self
+                        .registry
+                        .extensions
+                        .iter()
+                        .any(|e| e.manifest.id == manifest.id)
+                {
+                    return Err("Install at most ten extensions.".into());
+                }
+                self.registry
+                    .extensions
+                    .retain(|e| e.manifest.id != manifest.id);
+                self.registry.extensions.push(crate::extensions::Installed {
+                    granted: manifest.permissions.clone(),
+                    manifest,
+                    enabled: true,
+                });
+                self.persist()?;
+                Ok(json!({"extensions":self.registry.extensions}))
+            }
+            "remove_extension" | "enable_extension" => {
+                let id = field(&req, "id")?;
+                if op == "remove_extension" {
+                    self.registry.extensions.retain(|e| e.manifest.id != id);
+                } else {
+                    let installed = self
+                        .registry
+                        .extensions
+                        .iter_mut()
+                        .find(|e| e.manifest.id == id)
+                        .ok_or("Extension not found.")?;
+                    installed.enabled = req["enabled"] == true;
+                }
+                self.persist()?;
+                Ok(json!({"extensions":self.registry.extensions}))
+            }
+            "run_extension" => {
+                let installed = self
+                    .registry
+                    .extensions
+                    .iter()
+                    .find(|e| e.manifest.id == req["id"].as_str().unwrap_or("") && e.enabled)
+                    .ok_or("Enable the extension before running it.")?;
+                crate::extensions::run(
+                    &installed.manifest,
+                    field(&req, "command")?,
+                    &installed.granted,
+                    field(&req, "markdown")?,
+                    field(&req, "path")?,
+                    &chrono::Local::now().fixed_offset(),
+                )
+            }
             "reading_document" | "render_formula" | "render_diagram" | "reading_embed"
             | "highlight_code" | "render_pdf" | "reading_resolve" | "reading_download" => {
                 self.reading_operation(req)

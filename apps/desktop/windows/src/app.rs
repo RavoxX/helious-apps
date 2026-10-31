@@ -70,6 +70,7 @@ pub struct HeliousApp {
     pub authoring: crate::authoring::AuthoringState,
     pub canvas: crate::canvas::CanvasState,
     pub reading: crate::reading::ReadingState,
+    pub extensions: crate::extensions::ExtensionState,
 }
 pub fn string<'a>(value: &'a Value, key: &str) -> &'a str {
     value[key].as_str().unwrap_or("")
@@ -165,6 +166,7 @@ impl HeliousApp {
             authoring: crate::authoring::AuthoringState::default(),
             canvas: crate::canvas::CanvasState::default(),
             reading: crate::reading::ReadingState::default(),
+            extensions: crate::extensions::ExtensionState::default(),
         };
         app.request("status", json!({"operation":"status"}));
         app
@@ -219,6 +221,8 @@ impl HeliousApp {
         let tag = value["operation"].as_str().unwrap_or("").to_string();
         if tag == "open_server" {
             self.source = "server".into();
+            self.reading = crate::reading::ReadingState::default();
+            self.extensions.proposal = None;
             self.canvas = crate::canvas::CanvasState::default();
             self.authoring = crate::authoring::AuthoringState::default();
             self.vault = value["vault"].clone();
@@ -308,11 +312,39 @@ impl HeliousApp {
                 }
             };
             match tag.as_str() {
+                "extensions" => {
+                    self.extensions.installed =
+                        serde_json::from_value(data["extensions"].clone()).unwrap_or_default();
+                }
                 "reading_document" => {
                     if data["key"] == self.reading.key {
                         match serde_json::from_value(data["blocks"].clone()) {
                             Ok(blocks) => self.reading.blocks = std::sync::Arc::new(blocks),
                             Err(_) => self.error = "Cannot display this reading preview.".into(),
+                        }
+                    }
+                }
+                "reading_download" => {
+                    if string(&data, "key").starts_with(&self.reading.key)
+                        && !self.reading.key.is_empty()
+                    {
+                        use base64::Engine as _;
+                        if let Ok(bytes) =
+                            base64::engine::general_purpose::STANDARD.decode(string(&data, "data"))
+                        {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .set_file_name(
+                                    string(&data, "path")
+                                        .rsplit('/')
+                                        .next()
+                                        .unwrap_or("attachment"),
+                                )
+                                .save_file()
+                            {
+                                if std::fs::write(path, bytes).is_err() {
+                                    self.error = "Cannot save the attachment.".into();
+                                }
+                            }
                         }
                     }
                 }
@@ -338,6 +370,8 @@ impl HeliousApp {
                     self.request("canvas_list", self.scope("canvas_list"));
                 }
                 "canvas_deleted" => {
+                    self.reading = crate::reading::ReadingState::default();
+                    self.extensions.proposal = None;
                     self.canvas = crate::canvas::CanvasState::default();
                     self.request("canvas_list", self.scope("canvas_list"));
                 }
@@ -354,6 +388,10 @@ impl HeliousApp {
                 }
                 "status" => {
                     let first = self.status.is_null();
+                    if first {
+                        self.queued
+                            .push_back(("extensions".into(), json!({"operation":"extensions"})));
+                    }
                     let changed = data["changedVaults"]
                         .as_array()
                         .is_some_and(|a| a.contains(&self.vault["id"]));
@@ -385,6 +423,10 @@ impl HeliousApp {
                     }
                 }
                 "open_local" | "open_recent" => {
+                    self.reading = crate::reading::ReadingState::default();
+                    self.extensions.proposal = None;
+                    self.reading = crate::reading::ReadingState::default();
+                    self.extensions.proposal = None;
                     self.canvas = crate::canvas::CanvasState::default();
                     self.authoring = crate::authoring::AuthoringState::default();
                     self.source = "local".into();

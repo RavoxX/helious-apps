@@ -1,6 +1,7 @@
 pub mod authoring;
 mod authoring_service;
 pub mod canvas;
+pub mod extensions;
 pub mod knowledge;
 #[cfg(windows)]
 mod pdf_windows;

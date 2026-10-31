@@ -56,6 +56,7 @@ if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=se
                 if !self.version.is_null(){ui.label("Historical content (read only)");egui::ScrollArea::vertical().max_height(180.0).show(ui,|ui|{ui.monospace(helious_native::knowledge::mask_secrets(string(&self.version,"markdown")));});if ui.button("Use this content as a draft").clicked(){self.markdown=string(&self.version,"markdown").into();self.version=Value::Null;self.history=Value::Null;}}
             });}
             self.properties_panel(ui);
+            self.extension_commands(ui);
             let editor=|ui:&mut egui::Ui,app:&mut HeliousApp|{
                 egui::ScrollArea::both().id_salt("source-editor").show(ui,|ui|{
                     ui.add_enabled(app.pending.as_deref()!=Some("save_note"),egui::TextEdit::multiline(&mut app.markdown).font(egui::FontId::monospace(app.font_size)).desired_width(if app.wrap{ui.available_width()}else{10000.0}).desired_rows(35).code_editor()).on_hover_text("Markdown source editor");
@@ -154,6 +155,7 @@ if self.update["available"]==true&&!self.update_ready&&ui.add_enabled(self.pendi
 if self.update_ready&&ui.add_enabled(self.pending.is_none()&&!self.dirty(),egui::Button::new("Update and restart")).clicked(){self.request("install_update",json!({"operation":"install_update"}));}});
             if self.update_ready&&self.dirty(){ui.weak("Save your current draft before installing.");}
             ui.add_space(15.0);if ui.add_enabled(self.settings_dirty&&self.pending.is_none(),egui::Button::new("Save settings")).clicked(){self.request("settings",json!({"operation":"settings","settings":{"theme":self.theme,"fontSize":self.font_size as u64,"wrap":self.wrap,"automaticChecks":self.automatic_checks,"automaticInstall":self.automatic_install}}));}
+            ui.add_space(24.0);self.extension_manager(ui);
             ui.add_space(28.0);ui.heading("Storage");ui.label("Local vaults contain plain Markdown and a .helious folder for history and sync checkpoints. Back up both.");ui.weak(self.data_folder.to_string_lossy());if ui.button("Open desktop settings folder").clicked(){let _=open::that(&self.data_folder);}
             ui.add_space(24.0);ui.heading("Keyboard shortcuts");egui::Grid::new("shortcuts").spacing([28.0,10.0]).show(ui,|ui|{for (key,action) in [("Ctrl+S","Save note"),("Ctrl+O","Open local folder"),("Ctrl+,","Settings")]{ui.monospace(key);ui.label(action);ui.end_row();}});
             ui.add_space(24.0);ui.heading("About");ui.label("Helious 0.9.0 · Rust / egui / eframe / wgpu");ui.label("Windows uses a native rendered interface, with no webview and no application menu strip.");

@@ -6,6 +6,7 @@ enum Destination: String, CaseIterable, Identifiable {
     var symbol: String {switch self {case .workspace: return "doc.text"; case .graph: return "point.3.connected.trianglepath.dotted"; case .canvas: return "square.grid.2x2"; case .sync: return "arrow.triangle.2.circlepath"; case .account: return "person.crop.circle"; case .settings: return "gearshape"}}
 }
 @MainActor final class WorkspaceStore: ObservableObject {
+    let extensions = NativeExtensions()
     let bridge = NativeBridge()
     let updates = UpdateController()
     let cloud = "https://helious.work"

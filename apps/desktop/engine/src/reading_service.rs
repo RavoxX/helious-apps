@@ -109,7 +109,57 @@ impl Engine {
                         return Err("Note moved to another Space. Reload it.".into());
                     }
                     let text = reading::fragment(field(&data["note"], "markdown")?, &fragment)?;
-                    json!({"kind":"note","id":note["id"],"path":note["path"],"blocks":reading::document(&text)?})
+                    let mut blocks = reading::document(&text)?;
+                    fn links(
+                        blocks: &mut [reading::Block],
+                        path: &str,
+                        space: &str,
+                        notes: &[Value],
+                        dark: bool,
+                    ) {
+                        for block in blocks {
+                            if block.kind == "code" {
+                                block.spans =
+                                    reading::highlight(&block.text, &block.language, dark);
+                            }
+                            for span in &mut block.spans {
+                                if !span.target.is_empty()
+                                    && !span.target.starts_with("https://")
+                                    && !span.target.starts_with("http://")
+                                {
+                                    span.target = reading::resolve(
+                                        path,
+                                        &span.target,
+                                        &span.syntax,
+                                        space,
+                                        notes,
+                                    )
+                                    .map(|(note, fragment)| {
+                                        format!(
+                                            "/{}{}",
+                                            note["path"].as_str().unwrap_or(""),
+                                            if fragment.is_empty() {
+                                                String::new()
+                                            } else {
+                                                format!("#{fragment}")
+                                            }
+                                        )
+                                    })
+                                    .unwrap_or_else(|| "unavailable:note".into());
+                                    span.syntax = "wiki".into();
+                                }
+                            }
+                            links(&mut block.children, path, space, notes, dark);
+                        }
+                    }
+                    links(
+                        &mut blocks,
+                        field(note, "path")?,
+                        space,
+                        notes["notes"].as_array().ok_or("Invalid index.")?,
+                        req["dark"] == true,
+                    );
+                    json!({"kind":"note","id":note["id"],"path":note["path"],"blocks":blocks})
                 } else {
                     let files = self.workspace_files(&req)?;
                     let (file,_)=reading::resolve(path,target,syntax,space,&files).ok_or("Embedded reference is unavailable in this Space. Use a full vault path for ambiguous names.")?;

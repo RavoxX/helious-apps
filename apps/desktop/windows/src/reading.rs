@@ -228,6 +228,21 @@ impl HeliousApp {
                         } else {
                             &block.title
                         });
+                        if ui
+                            .add_enabled(
+                                self.pending.is_none(),
+                                egui::Button::new("Download original attachment…"),
+                            )
+                            .clicked()
+                        {
+                            let mut req = self.scope("reading_download");
+                            req["path"] = self.note["path"].clone();
+                            req["spaceId"] = self.note["spaceId"].clone();
+                            req["target"] = json!(block.target);
+                            req["syntax"] = json!(block.syntax);
+                            req["key"] = json!(key);
+                            self.request("reading_download", req);
+                        }
                         if let Some(asset) = self.reading.assets.get(&key).cloned() {
                             self.show_asset(ui, &key, &asset);
                         } else if ui
@@ -242,6 +257,7 @@ impl HeliousApp {
                             req["spaceId"] = self.note["spaceId"].clone();
                             req["target"] = json!(block.target);
                             req["syntax"] = json!(block.syntax);
+                            req["dark"] = json!(ui.visuals().dark_mode);
                             req["key"] = json!(key);
                             self.request("reading_asset", req);
                         }

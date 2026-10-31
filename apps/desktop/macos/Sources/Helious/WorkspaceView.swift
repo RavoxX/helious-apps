@@ -90,6 +90,7 @@ struct NoteEditorView: View {
                     ScrollView {VStack(alignment: .leading) {ForEach(Array(store.versions.enumerated()), id: \.offset) {_, value in Button("Revision \(value["revision"] as? Int ?? 0) · \(value["recordedAt"] as? String ?? "")") {store.history(value["revision"] as? Int)}}}.frame(maxWidth: .infinity, alignment: .leading)}.frame(maxHeight: 140)
                     if !store.historical.isEmpty {ScrollView {Text(store.historical).font(.system(.body, design: .monospaced)).textSelection(.enabled)}.frame(maxHeight: 160); Button("Use as draft") {store.markdown = store.historical; store.versions = []; store.historical = ""}}
                 }.padding(16)}
+                ExtensionCommands(model: store.extensions)
                 PropertiesView()
                 Divider()
                 if store.mode == "Split" {HSplitView {source; preview}} else if store.mode == "Reading" {preview} else {source}

@@ -40,6 +40,7 @@ struct SettingsView: View {
         Form {
             Section("Appearance") {Picker("Theme", selection: $store.appearance) {Text("Dark").tag("dark"); Text("Light").tag("light"); Text("System").tag("system")}.pickerStyle(.segmented)}
             Section("Editor") {Slider(value: $store.fontSize, in: 12...28, step: 1) {Text("Text size: \(Int(store.fontSize))")}; Toggle("Wrap long lines", isOn: $store.wrap)}
+            Section("Extensions") {ExtensionsManager(model: store.extensions)}
             Section("Storage") {Text("Back up your Markdown folders with their .helious history and sync directory.").font(.callout).foregroundStyle(.secondary); Button("Open desktop settings folder") {NSWorkspace.shared.open(store.dataFolder)}}
             UpdateSettings(updates: store.updates)
             Section("About") {Text("Helious 0.9.0 · SwiftUI + native macOS controls"); Text("Vault and session operations use the shared Rust engine. Sessions stay in Keychain.").font(.callout).foregroundStyle(.secondary)}

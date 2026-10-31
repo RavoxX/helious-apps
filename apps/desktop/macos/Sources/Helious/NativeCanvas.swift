@@ -67,7 +67,7 @@ struct NativeCanvasView: View {
                         HStack {Picker("Type", selection: $kind) {ForEach(["text", "file", "link", "group"], id: \.self) {Text($0)}}.frame(width: 160); TextField("Text, vault file path, URL or group label", text: $content); Stepper("Width \(cardWidth)", value: $cardWidth, in: 100...4000, step: 20); Stepper("Height \(cardHeight)", value: $cardHeight, in: 60...4000, step: 20)}
                         HStack {Button("Add card") {applyCard(true)}; Button("Apply selected card") {applyCard(false)}.disabled(model.selected.isEmpty); Button("Delete selected card", role: .destructive) {deleteCard()}.disabled(model.selected.isEmpty)}
                         HStack {Picker("From", selection: $from) {Text("Choose card").tag(""); ForEach(model.document.nodes) {Text("\($0.type) · \($0.id.prefix(8))").tag($0.id)}}; Picker("To", selection: $to) {Text("Choose card").tag(""); ForEach(model.document.nodes) {Text("\($0.type) · \($0.id.prefix(8))").tag($0.id)}}; TextField("Connection label", text: $edgeLabel); Button("Connect cards") {connect()}.disabled(from.isEmpty || to.isEmpty)}
-                        ScrollView {ForEach(model.document.edges) {edge in HStack {Text("\(edge.fromNode.prefix(8)) → \(edge.toNode.prefix(8)) · \(edge.label ?? "")").font(.caption); Button("Remove connection") {model.record(); model.document.edges.removeAll {$0.id == edge.id}}}}.frame(maxHeight: 90)
+                        ScrollView {ForEach(model.document.edges) {edge in HStack {Text("\(edge.fromNode.prefix(8)) → \(edge.toNode.prefix(8)) · \(edge.label ?? "")").font(.caption); Button("Remove connection") {model.record(); model.document.edges.removeAll {$0.id == edge.id}}}}}.frame(maxHeight: 90)
                     }.padding(.top, 8)
                 }
                 Text("Drag cards. Scroll or pinch to pan/zoom. Select a card and use arrow keys to move it. Double-click file/link cards to open them.").font(.caption).foregroundStyle(.secondary)
@@ -84,13 +84,7 @@ struct NativeCanvasView: View {
                             }
                         }
                         ForEach(model.document.nodes.sorted {($0.type == "group" ? 0 : 1) < ($1.type == "group" ? 0 : 1)}) {card in
-                            VStack(alignment: .leading) {Text(card.type.capitalized).font(.caption).foregroundStyle(.secondary); Text(mask(card.content)).font(.body).lineLimit(8); Spacer()}.padding(12).frame(width: Double(card.width) * model.zoom, height: Double(card.height) * model.zoom, alignment: .topLeading)
-                                .background(card.type == "group" ? Color.secondary.opacity(0.06) : Color(nsColor: .textBackgroundColor))
-                                .clipShape(RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).stroke(model.selected == card.id ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: model.selected == card.id ? 2 : 1))
-                                .offset(x: Double(card.x - minX) * model.zoom, y: Double(card.y - minY) * model.zoom)
-                                .onTapGesture(count: 2) {openCard(card)}.onTapGesture {select(card)}
-                                .gesture(DragGesture().onChanged {event in if drag?.id != card.id {model.record(); drag = card; select(card)}; guard let old = drag, let i = model.document.nodes.firstIndex(where: {$0.id == card.id}) else {return}; model.document.nodes[i].x = bounded(Double(old.x) + event.translation.width / model.zoom); model.document.nodes[i].y = bounded(Double(old.y) + event.translation.height / model.zoom)}.onEnded {_ in drag = nil})
-                                .accessibilityLabel("Select \(card.type) card \(card.content.prefix(60))").accessibilityAddTraits(.isButton)
+                            cardView(card)
                         }
                     }.frame(width: boardWidth * model.zoom, height: boardHeight * model.zoom).background(Color(nsColor: .underPageBackgroundColor))
                 }.focusable().onMoveCommand {direction in move(direction)}.onDeleteCommand {deleteCard()}.gesture(MagnifyGesture().onEnded {value in model.zoom = min(2.5, max(0.15, model.zoom * value.magnification))})
@@ -98,6 +92,15 @@ struct NativeCanvasView: View {
         }.padding(18).onAppear {store.send("canvas_list", store.scope("canvas_list"))}
         .confirmationDialog("Delete this canvas?", isPresented: $showDelete, titleVisibility: .visible) {Button("Delete canvas", role: .destructive) {var req = store.scope("canvas_delete"); req["path"] = model.file["path"]; req["spaceId"] = model.file["spaceId"]; req["expected"] = model.file; store.send("canvas_deleted", req)}}
         }
+    }
+    func cardView(_ card: BoardCard) -> some View {
+        VStack(alignment: .leading) {Text(card.type.capitalized).font(.caption).foregroundStyle(.secondary); Text(mask(card.content)).font(.body).lineLimit(8); Spacer()}.padding(12).frame(width: Double(card.width) * model.zoom, height: Double(card.height) * model.zoom, alignment: .topLeading)
+                                .background(card.type == "group" ? Color.secondary.opacity(0.06) : Color(nsColor: .textBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).stroke(model.selected == card.id ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: model.selected == card.id ? 2 : 1))
+                                .offset(x: Double(card.x - minX) * model.zoom, y: Double(card.y - minY) * model.zoom)
+                                .onTapGesture(count: 2) {openCard(card)}.onTapGesture {select(card)}
+                                .gesture(DragGesture().onChanged {event in if drag?.id != card.id {model.record(); drag = card; select(card)}; guard let old = drag, let i = model.document.nodes.firstIndex(where: {$0.id == card.id}) else {return}; model.document.nodes[i].x = bounded(Double(old.x) + event.translation.width / model.zoom); model.document.nodes[i].y = bounded(Double(old.y) + event.translation.height / model.zoom)}.onEnded {_ in drag = nil})
+                                .accessibilityLabel("Select \(card.type) card \(card.content.prefix(60))").accessibilityAddTraits(.isButton)
     }
     func center(_ card: BoardCard) -> CGPoint {CGPoint(x: Double(card.x - minX + card.width/2) * model.zoom, y: Double(card.y - minY + card.height/2) * model.zoom)}
     func bounded(_ number: Double) -> Int {Int(min(100000, max(-100000, number.rounded())))}
@@ -117,6 +120,6 @@ struct NativeCanvasView: View {
     func connect() {var next = model.document; next.edges.append(BoardEdge(id: UUID().uuidString, fromNode: from, toNode: to, label: edgeLabel, toEnd: "arrow")); checked(next)}
     func deleteCard() {guard !model.selected.isEmpty else {return}; model.record(); model.document.nodes.removeAll {$0.id == model.selected}; model.document.edges.removeAll {$0.fromNode == model.selected || $0.toNode == model.selected}; model.selected = ""}
     func move(_ direction: MoveCommandDirection) {guard let i = model.document.nodes.firstIndex(where: {$0.id == model.selected}) else {return}; model.record(); switch direction {case .left: model.document.nodes[i].x = max(-100000, model.document.nodes[i].x - 10); case .right: model.document.nodes[i].x = min(100000, model.document.nodes[i].x + 10); case .up: model.document.nodes[i].y = max(-100000, model.document.nodes[i].y - 10); case .down: model.document.nodes[i].y = min(100000, model.document.nodes[i].y + 10); default: break}}
-    func openCard(_ card: BoardCard) {if card.type == "file", let note = store.notes.first(where: {$0.path == card.file && $0.spaceId == model.file["spaceId"] as? String}) {store.select(note.id)} else if card.type == "link", let link = card.url, let url = URL(string: link), ["http", "https"].contains(url.scheme ?? "") {NSWorkspace.shared.open(url)}}
+    func openCard(_ card: BoardCard) {if card.type == "file", let note = store.notes.first(where: {$0.path == card.file && $0.spaceId == (model.file["spaceId"] as? String)}) {store.select(note.id)} else if card.type == "link", let link = card.url, let url = URL(string: link), ["http", "https"].contains(url.scheme ?? "") {NSWorkspace.shared.open(url)}}
     func export() {let dialog = NSSavePanel(); dialog.nameFieldStringValue = URL(fileURLWithPath: model.file["path"] as? String ?? "Board.canvas").lastPathComponent; if dialog.runModal() == .OK, let url = dialog.url {do {try JSONEncoder().encode(model.document).write(to: url, options: .atomic)} catch {store.error = "Cannot export this board."}}}
 }
