@@ -6,6 +6,8 @@ Windows uses Rust/egui/eframe with wgpu rendering. macOS uses SwiftUI/AppKit wit
 
 ## Downloads and upgrading
 
+[Version 0.9.3](https://github.com/RavoxX/helious-apps/releases/tag/v0.9.3) provides the navigation/Inspector/settings refresh described below. Windows and universal macOS packaging passed CI. All eight release assets download without a GitHub login; payload hashes and both updater signatures were independently checked. This does not add platform code signing/notarization or imply an interactive Mac UI test.
+
 macOS 0.9.2 refreshes release discovery every fifteen minutes while automatic checks are enabled, so a continuously running app does not remain pinned to its startup release. Sparkle retains its own check/download schedule and dirty-draft install guards. Disable automatic checks to stop periodic discovery; manual checks still refresh immediately. This refresh is a GitHub metadata request, not a Cloud account request.
 
 Download from [Helious Apps releases](https://github.com/RavoxX/helious-apps/releases): Windows x64 EXE/MSI, universal macOS DMG (macOS 14+), and a ZIP used by the macOS updater. Verify files with SHA256SUMS.txt.
