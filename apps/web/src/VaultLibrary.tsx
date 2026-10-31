@@ -1,3 +1,4 @@
+import { ReadingAppearance } from './ReadingAppearance';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -54,6 +55,7 @@ import { FileTree } from './FileTree';
 import { WorkspaceSettings } from './WorkspaceSettings';
 import { AuthoringTools } from './AuthoringTools';
 import { PropertiesEditor } from './PropertiesEditor';
+import { NoteExtensions } from './NoteExtensions';
 import { loadPreferences, matchesShortcut, type ShortcutAction } from './preferences';
 import './vaults.css';
 import './workspace.css';
@@ -101,6 +103,8 @@ interface Attachment {
 const message = (error: Error | null) => error?.message ?? '';
 
 function NoteEditor({
+  userId,
+  cssSnippet,
   note,
   vaultId,
   openNote,
@@ -108,6 +112,8 @@ function NoteEditor({
   openGraph,
   spaces,
 }: {
+  userId: string;
+  cssSnippet: string;
   note: Note;
   vaultId: string;
   openNote: (id: string | null) => void;
@@ -338,13 +344,25 @@ function NoteEditor({
           <span>Space changes take effect when you save.</span>
         </label>
         {mode !== 'Reading' && (
-          <PropertiesEditor
-            value={markdown}
-            change={(value) => {
-              setMarkdown(value);
-              setSaved(false);
-            }}
-          />
+          <>
+            <NoteExtensions
+              userId={userId}
+              source={markdown}
+              path={path}
+              noteId={note.id}
+              apply={(value) => {
+                setMarkdown(value);
+                setSaved(false);
+              }}
+            />
+            <PropertiesEditor
+              value={markdown}
+              change={(value) => {
+                setMarkdown(value);
+                setSaved(false);
+              }}
+            />
+          </>
         )}
         <div className={`markdown-surface ${mode === 'Live preview' ? 'markdown-split' : ''}`}>
           <div className="source-pane" hidden={mode === 'Reading'}>
@@ -361,11 +379,13 @@ function NoteEditor({
           </div>
           {mode !== 'Source' && (
             <Suspense fallback={<p className="vault-status">Preparing your preview…</p>}>
-              <MarkdownReading
-                value={markdown}
-                openLink={openLink}
-                context={{ vaultId, path: note.path, spaceId: note.spaceId, notes }}
-              />
+              <ReadingAppearance snippet={cssSnippet}>
+                <MarkdownReading
+                  value={markdown}
+                  openLink={openLink}
+                  context={{ vaultId, path: note.path, spaceId: note.spaceId, notes }}
+                />
+              </ReadingAppearance>
             </Suspense>
           )}
         </div>
@@ -1298,6 +1318,8 @@ export function VaultLibrary({
                   create={focusNewNote}
                   render={(note, navigate) => (
                     <NoteEditor
+                      userId={userId}
+                      cssSnippet={preferences.cssSnippet ?? ''}
                       note={note}
                       vaultId={vaultId!}
                       openNote={navigate}

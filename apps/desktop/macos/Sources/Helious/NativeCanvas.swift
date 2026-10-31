@@ -114,6 +114,7 @@ struct NativeCanvasView: View {
     }
     func applyCard(_ add: Bool) {var next = model.document; let existing = next.nodes.first(where: {$0.id == model.selected}); let index = next.nodes.count
         var card = BoardCard(id: add ? UUID().uuidString : model.selected, type: kind, x: existing?.x ?? (index % 4)*320, y: existing?.y ?? (index/4)*240, width: cardWidth, height: cardHeight)
+        if !add, let existing, existing.type == kind {card.color = existing.color; card.subpath = existing.subpath}
         switch kind {case "file": card.file = content; case "link": card.url = content; case "group": card.label = content; default: card.text = content}
         guard add || existing != nil else {return}; if add {next.nodes.append(card)} else if let i = next.nodes.firstIndex(where: {$0.id == card.id}) {next.nodes[i] = card}; checked(next); model.selected = card.id
     }

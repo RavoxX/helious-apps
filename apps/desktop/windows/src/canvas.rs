@@ -22,6 +22,7 @@ pub struct CanvasState {
     pub history: helious_native::canvas::History,
     pub drag_origin: Option<Value>,
     pub confirm_delete: bool,
+    pub fit: bool,
 }
 impl Default for CanvasState {
     fn default() -> Self {
@@ -46,6 +47,7 @@ impl Default for CanvasState {
             history: Default::default(),
             drag_origin: None,
             confirm_delete: false,
+            fit: false,
         }
     }
 }
@@ -223,20 +225,7 @@ impl HeliousApp {
                 self.canvas.history.redo(&mut self.canvas.document);
             }
             if ui.button("Fit board").clicked() {
-                let nodes = self.canvas.document["nodes"]
-                    .as_array()
-                    .cloned()
-                    .unwrap_or_default();
-                let minx = nodes
-                    .iter()
-                    .map(|n| n["x"].as_f64().unwrap_or(0.0))
-                    .fold(0.0, f64::min);
-                let miny = nodes
-                    .iter()
-                    .map(|n| n["y"].as_f64().unwrap_or(0.0))
-                    .fold(0.0, f64::min);
-                self.canvas.zoom = 0.65;
-                self.canvas.pan = egui::vec2(30.0 - minx as f32 * 0.65, 30.0 - miny as f32 * 0.65);
+                self.canvas.fit = true;
             }
             ui.add(egui::Slider::new(&mut self.canvas.zoom, 0.15..=2.5).text("Zoom"));
             if ui.button("Export .canvas…").clicked() {
@@ -282,6 +271,34 @@ impl HeliousApp {
             egui::vec2(ui.available_width(), ui.available_height().max(280.0)),
             egui::Sense::click_and_drag(),
         );
+        if self.canvas.fit {
+            let nodes = self.canvas.document["nodes"].as_array().expect("cards");
+            let minx = nodes
+                .iter()
+                .map(|n| n["x"].as_f64().unwrap_or(0.0))
+                .fold(f64::INFINITY, f64::min);
+            let miny = nodes
+                .iter()
+                .map(|n| n["y"].as_f64().unwrap_or(0.0))
+                .fold(f64::INFINITY, f64::min);
+            let maxx = nodes
+                .iter()
+                .map(|n| n["x"].as_f64().unwrap_or(0.0) + n["width"].as_f64().unwrap_or(0.0))
+                .fold(f64::NEG_INFINITY, f64::max);
+            let maxy = nodes
+                .iter()
+                .map(|n| n["y"].as_f64().unwrap_or(0.0) + n["height"].as_f64().unwrap_or(0.0))
+                .fold(f64::NEG_INFINITY, f64::max);
+            if !nodes.is_empty() {
+                self.canvas.zoom = ((rect.width() - 60.0) / (maxx - minx).max(1.0) as f32)
+                    .min((rect.height() - 60.0) / (maxy - miny).max(1.0) as f32)
+                    .clamp(0.15, 2.5);
+                self.canvas.pan = rect.size() / 2.0
+                    - egui::vec2((minx + maxx) as f32 / 2.0, (miny + maxy) as f32 / 2.0)
+                        * self.canvas.zoom;
+            }
+            self.canvas.fit = false;
+        }
         let painter = ui.painter_at(rect);
         let dark = ui.visuals().dark_mode;
         painter.rect_filled(
@@ -409,7 +426,19 @@ impl HeliousApp {
                 ui.fonts_mut(|f| f.layout_job(galley)),
                 ui.visuals().text_color(),
             );
+            hit.widget_info(|| {
+                egui::WidgetInfo::labeled(
+                    egui::accesskit::Role::Button,
+                    true,
+                    format!(
+                        "Select {} card {}",
+                        string(&n, "type"),
+                        helious_native::knowledge::mask_secrets(string(&n, key))
+                    ),
+                )
+            });
             if hit.clicked() {
+                response.request_focus();
                 self.canvas.select(id);
             }
             if hit.drag_started() {
@@ -420,7 +449,7 @@ impl HeliousApp {
             if hit.dragged() {
                 dragging = true;
                 if let Some(origin) = &self.canvas.drag_origin {
-                    let delta = hit.drag_delta() / self.canvas.zoom;
+                    let delta = hit.total_drag_delta().unwrap_or_default() / self.canvas.zoom;
                     if let Some(item) = self.canvas.document["nodes"]
                         .as_array_mut()
                         .expect("cards")
@@ -498,7 +527,18 @@ if ui.button("Confirm canvas deletion").clicked(){let mut req=self.scope("canvas
             "group" => "label",
             _ => "text",
         };
-        let mut value = json!({"id":id,"type":self.canvas.kind,"x":x,"y":y,"width":self.canvas.width,"height":self.canvas.height});
+        let mut value = self.canvas.document["nodes"]
+            .as_array()
+            .and_then(|a| {
+                a.iter()
+                    .find(|n| n["id"] == id && n["type"] == self.canvas.kind)
+            })
+            .cloned()
+            .unwrap_or_else(|| json!({"id":id,"type":self.canvas.kind}));
+        value["x"] = x;
+        value["y"] = y;
+        value["width"] = json!(self.canvas.width);
+        value["height"] = json!(self.canvas.height);
         value[key] = json!(self.canvas.content);
         value
     }

@@ -83,3 +83,43 @@ fn opens_existing_vault_edits_preserves_history_and_persists_native_settings() {
             .contains("password")
     );
 }
+
+#[test]
+fn extension_grants_persist_and_disable_revokes_execution_without_saving_drafts() {
+    let settings = tempfile::tempdir().unwrap();
+    let folder = tempfile::tempdir().unwrap();
+    let mut engine = Engine::new(settings.path().into()).unwrap();
+    let manifest: serde_json::Value = serde_json::from_str(crate::extensions::EXAMPLE).unwrap();
+    assert!(engine
+        .execute(json!({"operation":"install_extension","manifest":manifest,"consent":false}))
+        .is_err());
+    engine
+        .execute(json!({"operation":"install_extension","manifest":manifest,"consent":true}))
+        .unwrap();
+    let vault = engine
+        .execute(json!({"operation":"open_local","path":folder.path()}))
+        .unwrap();
+    let note=engine.execute(json!({"operation":"create_note","source":"local","vaultId":vault["id"],"body":{"path":"Review.md","spaceId":vault["spaces"][0]["id"],"markdown":"# Saved"}})).unwrap();
+    let req = json!({"operation":"run_extension","id":"meeting-tools","command":"checklist","markdown":"# Unsaved","path":"Review.md"});
+    let result = engine.execute(req.clone()).unwrap();
+    assert!(result["markdown"].as_str().unwrap().contains("# Unsaved"));
+    assert_eq!(
+        std::fs::read_to_string(folder.path().join("Review.md")).unwrap(),
+        "# Saved"
+    );
+    assert_eq!(note["note"]["revision"], 1);
+    drop(engine);
+    let mut engine = Engine::new(settings.path().into()).unwrap();
+    assert_eq!(
+        engine.execute(json!({"operation":"extensions"})).unwrap()["extensions"][0]["granted"],
+        manifest["permissions"]
+    );
+    engine
+        .execute(json!({"operation":"enable_extension","id":"meeting-tools","enabled":false}))
+        .unwrap();
+    assert!(engine.execute(req.clone()).is_err());
+    engine
+        .execute(json!({"operation":"remove_extension","id":"meeting-tools"}))
+        .unwrap();
+    assert!(engine.execute(req).is_err());
+}

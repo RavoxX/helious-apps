@@ -59,7 +59,7 @@ const manifest = {
   schema: 1,
   version,
   notes:
-    'Native Windows egui and macOS SwiftUI apps, account sign-in, settings, local vaults and signed automatic updates.',
+    'Native authoring, Canvas, rich reading/media, permission-reviewed draft extensions and signed updates.',
   windows: entry('.exe'),
   macos: entry('.zip'),
 };
@@ -80,7 +80,7 @@ await writeFile(
 <title>Helious native updates</title><item><title>Helious ${version}</title>
 <pubDate>${new Date().toUTCString()}</pubDate><sparkle:version>${version}</sparkle:version><sparkle:shortVersionString>${version}</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-<description>Native Helious workspace, local folders, secure sign-in and update settings.</description>
+<description>Native authoring, Canvas, rich reading and permission-reviewed draft extensions.</description>
 <enclosure url="${base}/${archive.name}" sparkle:edSignature="${archiveSignature}" length="${archive.size}" type="application/zip"/>
 </item></channel></rss>\n`,
 );
@@ -95,7 +95,7 @@ await writeFile(join(directory, 'SHA256SUMS.txt'), sums.join('\n') + '\n');
 const notes = join(directory, 'release-notes.md');
 await writeFile(
   notes,
-  `Helious ${version}: native desktop preview.\n\nWindows uses Rust/egui/eframe with wgpu; macOS uses SwiftUI/AppKit. Both include local Markdown vaults, explicit Cloud/self-hosted sign-in, real-note graph, settings, selected-Space sync and signed updates.\n\nCloud defaults to https://helious.work, which is not live yet; local folders and self-hosting work independently.\n\nDownload Windows x64 EXE or MSI, or universal macOS DMG (macOS 14+). ZIP is the macOS updater archive. SHA256SUMS.txt lists file hashes.\n\nUpdate signatures are configured. Windows Authenticode and macOS Developer ID/notarization are not configured; operating systems may warn or block installation. Install this native version once manually; old 0.8.0 apps cannot self-update. Back up vaults including .helious/ before upgrading.\n\n[Desktop guide](https://github.com/${repository}/blob/${tag}/apps/docs/desktop.md). Advanced server security/token management remains available through the browser account panel while native feature parity develops.\n`,
+  `Helious ${version}: native desktop preview.\n\nWindows uses Rust/egui/eframe with wgpu; macOS uses SwiftUI/AppKit. Both include local Markdown vaults, explicit Cloud/self-hosted sign-in, real-note graph, settings, selected-Space sync and signed updates. Phase 9 adds daily notes/templates, typed YAML properties, guarded JSON Canvas boards, native reading/media and a capability-limited declarative extension API. Browser reading CSS snippets are scoped to note content. See the guides for native syntax and UI differences.\n\nCloud defaults to https://helious.work, which is not live yet; local folders and self-hosting work independently.\n\nDownload Windows x64 EXE or MSI, or universal macOS DMG (macOS 14+). ZIP is the macOS updater archive. SHA256SUMS.txt lists file hashes.\n\nUpdate signatures are configured. Windows Authenticode and macOS Developer ID/notarization are not configured; operating systems may warn or block installation. Install this native version once manually; old 0.8.0 apps cannot self-update. Back up vaults including .helious/ before upgrading.\n\n[Desktop guide](https://github.com/${repository}/blob/${tag}/apps/docs/desktop.md). Advanced server security/token management remains available through the browser account panel while native feature parity develops.\n`,
 );
 const gh = (...args) =>
   execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });

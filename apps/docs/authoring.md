@@ -1,6 +1,6 @@
 # Daily notes, templates and properties
 
-These tools are available in the **browser workspace for server vaults**. The native v0.8.1 interfaces do not yet expose these controls. Markdown files remain ordinary notes, so native clients and other editors can still read and edit their source.
+These tools are available in the **browser workspace for server vaults** and native 0.9 for local folders/server vaults. Markdown files remain ordinary portable notes.
 
 ## Daily notes
 
@@ -33,3 +33,7 @@ Supported controls are text, finite number, boolean, calendar date, one-string-p
 Unchanged YAML nodes and comments are retained. The Markdown body is preserved byte-for-byte as a JavaScript string, including its line endings. Malformed YAML, custom tags, anchors and aliases must be edited in Source mode; the property tool refuses a potentially lossy rewrite. New frontmatter uses LF; edits to existing CRLF frontmatter keep CRLF.
 
 Draft content stays in this browser tab's memory. Save before reloading or closing the page; it is not crash recovery.
+
+## Native controls
+
+Expand Daily notes & templates in the native explorer. Choose a destination Space, saved template and date/path. Native template selection is restricted to the destination Space to avoid inadvertently copying Personal material to Code. Native typed properties support strings, finite numbers, booleans, null and advanced JSON; dates are ISO strings and lists use JSON arrays. Apply changes to the draft, then Save. YAML comments/body and stale-write guards are retained. Daily notes reuse existing content rather than overwriting it. Native template/Markdown limits use UTF-8 bytes. See [extensions](./extensions) for permission-reviewed draft commands.

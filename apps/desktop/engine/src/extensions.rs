@@ -34,7 +34,7 @@ pub enum Step {
     #[serde(rename = "setProperty")]
     SetProperty { key: String, value: Value },
     #[serde(rename = "countWords")]
-    CountWords,
+    CountWords {},
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -96,7 +96,7 @@ pub fn validate(value: Value) -> Result<Manifest> {
             return Err("Use unique command IDs, labelled commands and 1–20 steps.".into());
         }
         for step in &command.steps {
-            if !matches!(step, Step::CountWords)
+            if !matches!(step, Step::CountWords { .. })
                 && !manifest.permissions.iter().any(|p| p == "editor:write")
             {
                 return Err("Editing commands must declare editor:write.".into());
@@ -164,7 +164,9 @@ pub fn run(
                 values[key] = value.clone();
                 source = authoring::replace_properties(&source, &values)?;
             }
-            Step::CountWords => message = format!("Words: {}", source.split_whitespace().count()),
+            Step::CountWords {} => {
+                message = format!("Words: {}", source.split_whitespace().count())
+            }
         }
         if source.len() > authoring::NOTE_LIMIT {
             return Err("Extension output exceeds the draft size limit.".into());
@@ -191,6 +193,37 @@ pub fn run_now(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_browser_native_contract() {
+        let cases: Vec<Value> = serde_json::from_str(include_str!(
+            "../../../../packages/core/examples/extension-contract.json"
+        ))
+        .unwrap();
+        let clock = chrono::DateTime::parse_from_rfc3339("2026-10-31T12:00:00Z").unwrap();
+        for case in cases {
+            let mut manifest: Value = serde_json::from_str(EXAMPLE).unwrap();
+            manifest["commands"] = json!([{"id":"run","name":"Run","steps":case["steps"]}]);
+            let parsed = validate(manifest);
+            if case["invalid"] == true {
+                assert!(parsed.is_err(), "{case}");
+                continue;
+            }
+            let parsed = parsed.unwrap();
+            let result = run(
+                &parsed,
+                "run",
+                &parsed.permissions,
+                case["source"].as_str().unwrap_or(""),
+                "Projects/Review.md",
+                &clock,
+            )
+            .unwrap();
+            assert_eq!(result["markdown"], case["expected"]);
+            if case["message"].is_string() {
+                assert_eq!(result["message"], case["message"]);
+            }
+        }
+    }
     #[test]
     fn extensions_are_bounded_declarative_and_require_grants() {
         let value = json!({"api":1,"id":"meeting","name":"Meeting","version":"1.0.0","permissions":["editor:read","editor:write"],"commands":[{"id":"stamp","name":"Stamp","steps":[{"op":"append","text":"\n{{date}} {{secret:key}}"}]}]});

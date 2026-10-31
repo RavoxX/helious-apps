@@ -52,6 +52,15 @@ impl ReadingState {
                 );
             }
             if data["kind"] == "image" {
+                let used: usize = self
+                    .textures
+                    .iter()
+                    .filter(|(id, _)| *id != &key)
+                    .map(|(_, t)| t.size()[0] * t.size()[1] * 4)
+                    .sum();
+                if used as u64 + data["pixelBytes"].as_u64().unwrap_or(64_000_001) > 64_000_000 {
+                    return Err("Image memory limit reached. Clear previews first.".into());
+                }
                 let image = image::load_from_memory(&bytes)
                     .map_err(|_| "Cannot decode preview image.")?
                     .into_rgba8();

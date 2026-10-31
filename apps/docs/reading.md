@@ -1,6 +1,6 @@
 # Reading, embeds and media
 
-**Reading** and the rendered half of **Live preview** support Markdown tables, tasks, footnotes, callouts, highlighted code, math and local embeds. These controls are available in the browser workspace for server vaults. Native v0.8.1 uses its existing source editor; it does not include these viewers.
+**Reading** and the rendered half of **Live preview** support Markdown tables, tasks, footnotes, callouts, highlighted code, math and local embeds. These controls are available in the browser workspace for server vaults. Native 0.9 adds its own native reading controls described below.
 
 ## Callouts, code and math
 
@@ -62,3 +62,11 @@ Rendering uses [Mermaid strict mode](https://mermaid.js.org/config/usage.html), 
 Raw HTML is skipped. Remote images and embedded sites are not loaded. Local attachments still use authenticated same-origin API requests, bounded to the 20 MiB upload limit. Viewer failures offer a download rather than relaxing content checks. Notes exceeding 250,000 characters or the preview's AST complexity limits remain editable in **Source**.
 
 No settings, database migrations or environment variables are required for these viewers. Browser dependency code, math fonts and the PDF worker are served by your own instance. The production build generates [third-party notices](/../app/licenses/THIRD-PARTY-NOTICES.txt), including upstream source links and license text. Keep these notices, the [KaTeX font license](/../app/licenses/KaTeX-fonts-LICENSE.txt) and the existing [Manrope font license](/../app/licenses/Manrope-OFL.txt) when redistributing. This inventory is attribution evidence, not a completed legal review of every service, asset or API use.
+
+## Native 0.9 reading
+
+Windows uses egui; macOS uses SwiftUI/AppKit. Both parse Markdown through the shared Rust engine, skip HTML, mask secret references, and support tables, task markers, footnotes, collapsible callouts, code highlighting, scoped note/media embeds and on-demand formulas/diagrams. Local folders and server vaults use the same Space-aware resolution and guarded storage operations. Attachment previews and audio never autoplay; explicit HTTP(S) link buttons open the system browser. Download original attachment saves opaque bytes without executing them.
+
+Native math uses the offline `latex-rust` renderer with bundled STIX fonts; it is a bounded TeX subset, not the browser's complete KaTeX dialect. Mermaid uses a native Rust renderer for flowchart, sequence, state and class diagrams (200 nodes/150 edges), with directives/HTML/assets/custom styling refused. Unsupported syntax keeps source visible. Both render generated content to bounded PNG images; neither app embeds browser HTML/SVG. Highlighting uses syntect rather than the browser's lowlight themes.
+
+Raster previews use decoded PNG/JPEG/GIF/WebP (first frame), 8,192-pixel sides and 16 million pixels. Windows PDFs use Windows.Data.Pdf raster pages; macOS uses PDFKit thumbnails with annotations hidden. Both expose page controls and a 500-page limit, without interactive PDF forms, links or text selection. Windows audio uses rodio; macOS uses AVAudioPlayer, so codec support differs. Use the original file in an accessible reader when required. Raster previews are reduced to at most 1,600 pixels per side. A reading document caches at most 20 assets/32 MiB of attachment bytes and 64 MB of generated/decoded image pixels; clear previews to release them. Native bounds are UTF-8 byte-based. Native screenshots/tests do not substitute for an interactive macOS accessibility review.

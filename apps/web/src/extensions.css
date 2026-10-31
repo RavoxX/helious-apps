@@ -1,0 +1,89 @@
+.note-extensions {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 18px;
+  font-size: 12px;
+}
+.note-extensions summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+.note-extensions p {
+  color: var(--color-muted);
+  line-height: 1.7;
+  max-width: 75ch;
+}
+.note-extensions label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+.note-extensions textarea {
+  width: 100%;
+  resize: vertical;
+  font: 12px/1.6 monospace;
+  max-height: 360px;
+  padding: 12px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.extension-command,
+.extension-actions,
+.extension-installed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.extension-command select {
+  min-width: 220px;
+  max-width: 100%;
+}
+.extension-installed label,
+.extension-permissions label {
+  flex-direction: row;
+  align-items: center;
+}
+.extension-installed {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.extension-permissions,
+.extension-proposal {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-top: 12px;
+}
+.note-extensions button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+  font: inherit;
+}
+@media (max-width: 700px) {
+  .note-extensions button {
+    min-height: 44px;
+  }
+  .extension-command select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.reading-appearance {
+  min-width: 0;
+}
+.reading-snippets textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 12px/1.6 monospace;
+}

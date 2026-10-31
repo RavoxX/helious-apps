@@ -1,3 +1,4 @@
+import { safeReadingSnippet } from './appearance';
 export const defaultShortcuts = {
   save: 'Mod+S',
   commands: 'Mod+P',
@@ -10,6 +11,7 @@ export type ShortcutAction = keyof typeof defaultShortcuts;
 export type Shortcuts = Record<ShortcutAction, string>;
 export interface Preferences {
   bookmarks: string[];
+  cssSnippet?: string;
   shortcuts: Shortcuts;
 }
 export const shortcutLabels: Record<ShortcutAction, string> = {
@@ -46,6 +48,7 @@ export function loadPreferences(userId: string): Preferences {
     ) as Partial<Preferences> | null;
     const shortcuts = { ...defaultShortcuts, ...raw?.shortcuts };
     return {
+      cssSnippet: safeReadingSnippet(raw?.cssSnippet),
       bookmarks: Array.isArray(raw?.bookmarks)
         ? raw.bookmarks
             .filter((id): id is string => typeof id === 'string' && /^[a-f0-9]{24}$/.test(id))

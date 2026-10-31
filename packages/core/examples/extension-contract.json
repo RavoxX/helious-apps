@@ -1,0 +1,21 @@
+[
+  {
+    "steps": [
+      { "op": "prepend", "text": "{{title}}\n" },
+      { "op": "replace", "find": "old", "text": "new" },
+      { "op": "append", "text": "\n{{date}} {{secret:key}}" }
+    ],
+    "source": "old old",
+    "expected": "Review\nnew new\n2026-10-31 {{secret:key}}"
+  },
+  {
+    "steps": [{ "op": "countWords" }],
+    "source": "one\ttwo\nthree",
+    "expected": "one\ttwo\nthree",
+    "message": "Words: 3"
+  },
+  { "steps": [{ "op": "replace", "find": "", "text": "x" }], "invalid": true },
+  { "steps": [{ "op": "script", "text": "fetch('https://example.invalid')" }], "invalid": true },
+  { "steps": [{ "op": "countWords", "network": true }], "invalid": true },
+  { "steps": [{ "op": "setProperty", "key": "__proto__", "value": true }], "invalid": true }
+]

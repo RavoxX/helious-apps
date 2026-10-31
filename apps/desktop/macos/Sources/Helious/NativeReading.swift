@@ -6,7 +6,7 @@ import CryptoKit
 
 struct ReadSpan: Decodable {var text: String; var bold: Bool; var italic: Bool; var code: Bool; var strike: Bool; var target: String; var syntax: String; var math: Bool; var color: String}
 struct ReadBlock: Decodable {var kind: String; var text: String; var spans: [ReadSpan]; var children: [ReadBlock]; var target: String; var syntax: String; var language: String; var level: Int; var title: String; var collapse: String}
-struct ReadAsset {var kind: String; var path: String; var id: String; var blocks: [ReadBlock]; var data: Data?}
+struct ReadAsset {var kind: String; var path: String; var id: String; var blocks: [ReadBlock]; var data: Data?; var pixelBytes: Int}
 @MainActor final class NativeReaderModel: ObservableObject {
     @Published var blocks: [ReadBlock] = []
     @Published var assets: [String: ReadAsset] = [:]
@@ -23,7 +23,9 @@ struct ReadAsset {var kind: String; var path: String; var id: String; var blocks
             guard assets.count < 20 else {throw NativeFailure.message("Clear previews before opening more attachments.")}
             let data = (result["data"] as? String).flatMap {Data(base64Encoded: $0)}
             if (data?.count ?? 0) + assets.values.reduce(0, {$0 + ($1.data?.count ?? 0)}) > 32*1024*1024 {throw NativeFailure.message("Preview memory limit reached. Clear previews or download the original.")}
-            assets[key] = ReadAsset(kind: result["kind"] as? String ?? "", path: result["path"] as? String ?? "", id: result["id"] as? String ?? "", blocks: (try? decode(result["blocks"] ?? [], as: [ReadBlock].self)) ?? [], data: data)
+            let pixelBytes=result["pixelBytes"] as? Int ?? 0
+            if pixelBytes + assets.filter({$0.key != key}).values.reduce(0, {$0 + $1.pixelBytes}) > 64_000_000 {throw NativeFailure.message("Image memory limit reached. Clear previews first.")}
+            assets[key] = ReadAsset(kind: result["kind"] as? String ?? "", path: result["path"] as? String ?? "", id: result["id"] as? String ?? "", blocks: (try? decode(result["blocks"] ?? [], as: [ReadBlock].self)) ?? [], data: data, pixelBytes: pixelBytes)
         } catch {if self.key == documentKey {loading.remove(key); errors[key] = error.localizedDescription}}}
     }
     func download(_ target: String, syntax: String, store: WorkspaceStore) {

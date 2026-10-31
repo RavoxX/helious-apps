@@ -13,16 +13,15 @@ Update signing is configured separately from platform signing. Windows Authentic
 ## Navigation
 
 - **Workspace:** local/server vaults, note search/creation, Markdown source, reading/split preview, explicit save and history drafts.
+- **Canvas:** portable text/file/link/group boards, connections, history of draft edits, export and guarded saves.
 - **Graph:** actual notes/links, bounded spatial-grid layout, pan/zoom, search and hover neighbor highlighting. The browser retains more extensive graph/analytics controls.
 - **Sync:** selected-Space pairing and preserved conflict review.
 - **Account:** visible Cloud/self-hosted sign-in, vault selection/creation and sign-out. Password/MFA, sessions, secrets and agent-token administration open the browser account panel.
-- **Settings:** appearance, editor size/wrapping, storage and update controls. macOS also has its standard Settings window and Cmd+,.
+- **Settings:** appearance, editor size/wrapping, extension permission/install controls, storage and updates. macOS also has its standard Settings window and Cmd+,.
 
 Windows has no File/Edit application menu strip. Ctrl+O opens a folder; Ctrl+S saves; Ctrl+, opens Settings. macOS uses its normal system menu bar and native toolbar/editor behavior.
 
-Native/browser feature parity is still a port: coordinated rename, bookmarks, independent note tabs/panes, daily/template controls, typed property forms, canvas editing, detailed analytics and advanced server administration remain available in the browser. Template/daily Markdown and `.canvas` attachments retain their normal portable formats. Native history can load old content into a draft; Save creates a current revision. Local native graph resolution currently covers wikilinks; the browser engine has richer link/fragment handling. Do not present these differences as full parity.
-
-The browser's [rich reading](./reading) adds callouts, code highlighting, math, on-demand diagrams and note/media embeds. These viewers are not part of native v0.8.1; their Markdown source and ordinary attachments remain portable. No native installer is replaced by a browser-only update.
+Native 0.9 adds daily notes/templates, typed properties, JSON Canvas boards, native rich reading/media and permission-reviewed declarative extensions. See [authoring](./authoring), [Canvas](./canvas), [reading](./reading) and [extensions](./extensions) for exact platform limits. Native/browser controls differ: coordinated rename, bookmarks, independent note tabs/panes, detailed analytics and advanced server administration remain in the browser. Native renderers support documented bounded syntax rather than every browser rendering dialect.
 
 ## Cloud and self-hosted sign-in
 

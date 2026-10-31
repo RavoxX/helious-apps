@@ -497,6 +497,7 @@ pub fn image_preview(bytes: &[u8]) -> Result<Vec<u8>> {
     if u64::from(image.width()) * u64::from(image.height()) > 16_000_000 {
         return Err("Image exceeds 16 million pixels.".into());
     }
+    let image = image.thumbnail(1600, 1600);
     let mut out = Cursor::new(vec![]);
     image
         .write_to(&mut out, image::ImageFormat::Png)
@@ -506,7 +507,16 @@ pub fn image_preview(bytes: &[u8]) -> Result<Vec<u8>> {
 }
 pub fn png_reply(bytes: Vec<u8>) -> Value {
     use base64::Engine as _;
-    json!({"kind":"image","data":base64::engine::general_purpose::STANDARD.encode(bytes)})
+    let pixels = bytes
+        .get(16..24)
+        .map(|size| {
+            u64::from(u32::from_be_bytes(size[..4].try_into().expect("PNG width")))
+                * u64::from(u32::from_be_bytes(
+                    size[4..].try_into().expect("PNG height"),
+                ))
+        })
+        .unwrap_or(0);
+    json!({"kind":"image","data":base64::engine::general_purpose::STANDARD.encode(bytes),"pixelBytes":pixels*4})
 }
 pub fn resolve<'a>(
     from: &str,
@@ -613,43 +623,69 @@ pub fn fragment(source: &str, fragment: &str) -> Result<String> {
         {
             return Err("Invalid block identifier.".into());
         }
-        let mut ranges = vec![];
-        let mut paragraphs = vec![];
-        let mut current: Option<(usize, String)> = None;
-        for (event, range) in &events {
-            match event {
-                Event::Start(Tag::Paragraph) => current = Some((range.start, String::new())),
-                Event::Text(text) => {
-                    if let Some((_, s)) = current.as_mut() {
-                        s.push_str(text)
-                    }
+        let blocks: Vec<_> = events
+            .iter()
+            .filter_map(|(event, range)| match event {
+                Event::Start(
+                    Tag::Paragraph
+                    | Tag::Item
+                    | Tag::CodeBlock(_)
+                    | Tag::BlockQuote(_)
+                    | Tag::List(_)
+                    | Tag::Table(_),
+                ) => Some((event, range.clone())),
+                _ => None,
+            })
+            .collect();
+        let marker = regex::Regex::new(&format!(r"[\t ]*\^{id}\s*$")).unwrap();
+        let mut selected = vec![];
+        for (event, range) in &blocks {
+            if !matches!(event, Event::Start(Tag::Paragraph | Tag::Item)) {
+                continue;
+            }
+            let raw = &source[range.clone()];
+            if !marker.is_match(raw) {
+                continue;
+            }
+            let chosen = if raw.trim() == format!("^{id}") {
+                blocks
+                    .iter()
+                    .filter(|(_, r)| r.end <= range.start)
+                    .max_by(|(_, a), (_, b)| a.end.cmp(&b.end).then_with(|| b.start.cmp(&a.start)))
+                    .map(|(_, r)| r.clone())
+            } else {
+                // A marker in a tight or loose list selects its nearest list item.
+                blocks
+                    .iter()
+                    .filter(|(e, r)| {
+                        matches!(e, Event::Start(Tag::Item))
+                            && r.start <= range.start
+                            && r.end >= range.end
+                    })
+                    .min_by_key(|(_, r)| r.end - r.start)
+                    .map(|(_, r)| r.clone())
+                    .or_else(|| Some(range.clone()))
+            };
+            if let Some(chosen) = chosen {
+                if !selected.contains(&chosen) {
+                    selected.push(chosen);
                 }
-                Event::End(TagEnd::Paragraph) => {
-                    if let Some((start, text)) = current.take() {
-                        paragraphs.push((start, range.end, text));
-                    }
-                }
-                _ => {}
             }
         }
-        for (i, (start, end, text)) in paragraphs.iter().enumerate() {
-            if text.trim_end().ends_with(&format!(" ^{id}")) || text.trim() == format!("^{id}") {
-                let (start, end) = if text.trim() == format!("^{id}") {
-                    if i == 0 {
-                        continue;
-                    }
-                    let p = &paragraphs[i - 1];
-                    (p.0, p.1)
-                } else {
-                    (*start, *end)
-                };
-                let text = regex::Regex::new(&format!(r"[\t ]*\^{id}\s*$"))
-                    .unwrap()
-                    .replace(&source[start..end], "")
-                    .to_string();
-                ranges.push(text);
-            }
-        }
+        // Parent list items containing a nested marked item are not separate matches.
+        let selected: Vec<_> = selected
+            .iter()
+            .filter(|a| {
+                !selected
+                    .iter()
+                    .any(|b| a != &b && a.start <= b.start && a.end >= b.end)
+            })
+            .cloned()
+            .collect();
+        let mut ranges: Vec<_> = selected
+            .into_iter()
+            .map(|r| marker.replace(&source[r], "").to_string())
+            .collect();
         if ranges.len() == 1 {
             return Ok(ranges.remove(0));
         }
@@ -692,6 +728,28 @@ pub fn fragment(source: &str, fragment: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn fragments_select_sections_list_items_and_standalone_blocks() {
+        assert_eq!(
+            fragment(
+                "# Main\n\n## Decision\nKeep.\n\n## Other\nSkip.",
+                "Decision"
+            )
+            .unwrap(),
+            "## Decision\nKeep.\n\n"
+        );
+        assert_eq!(
+            fragment("- First ^one\n- Second\n", "^one").unwrap(),
+            "- First"
+        );
+        assert!(fragment("Paragraph ^same\n\nOther ^same", "^same").is_err());
+        assert_eq!(
+            fragment("```rust\nlet n=1;\n```\n\n^code\n", "^code")
+                .unwrap()
+                .trim(),
+            "```rust\nlet n=1;\n```"
+        );
+    }
     #[test]
     fn native_ast_skips_html_and_preserves_structures() {
         let blocks=document("---\nsecret: hidden\n---\n# Title\n\n> [!TIP]- Remember\n> Keep body\n\n- [x] Done\n\n```rust\nlet n = 4;\n```\n\n![[Plan#Heading]]\n\n<script>not rendered</script>\n\n$E=mc^2$ {{secret:key}}").unwrap();

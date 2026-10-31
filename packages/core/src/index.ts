@@ -26,3 +26,4 @@ export * from './sync.js';
 export * from './authoring.js';
 export * from './canvas.js';
 export * from './reading.js';
+export * from './extensions.js';

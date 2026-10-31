@@ -21,6 +21,7 @@ export default defineConfig({
           { text: 'Reading, embeds & media', link: '/reading' },
           { text: 'Daily notes, templates & properties', link: '/authoring' },
           { text: 'Canvas', link: '/canvas' },
+          { text: 'Extensions & appearance', link: '/extensions' },
           { text: 'Knowledge graph', link: '/graph' },
           { text: 'Vault analytics', link: '/analytics' },
           { text: 'Spaces & permissions', link: '/spaces' },

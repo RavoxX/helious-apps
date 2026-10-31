@@ -39,6 +39,33 @@ fn native_daily_properties_and_canvas_controls_save_guarded_files() {
     assert!(harness.state().markdown.contains("true"));
     harness.state_mut().save();
     settle(&mut harness);
+    let manifest = helious_native::extensions::validate(
+        serde_json::from_str(helious_native::extensions::EXAMPLE).unwrap(),
+    )
+    .unwrap();
+    harness.state_mut().extensions.installed = vec![helious_native::extensions::Installed {
+        granted: manifest.permissions.clone(),
+        manifest,
+        enabled: true,
+    }];
+    harness.state_mut().extensions.selected = "meeting-tools/checklist".into();
+    harness.get_by_label("Properties").click();
+    harness.step();
+    harness.get_by_label("Extensions").click();
+    harness.step();
+    harness.get_by_label("Preview command").click();
+    harness.step();
+    assert!(!harness.state().markdown.contains("## Meeting"));
+    harness.get_by_label("Apply proposal to draft").click();
+    harness.step();
+    assert!(harness.state().markdown.contains("## Meeting"));
+    assert!(
+        !std::fs::read_to_string(vault.path().join("Daily/2026-10-31.md"))
+            .unwrap()
+            .contains("## Meeting")
+    );
+    harness.state_mut().save();
+    settle(&mut harness);
     harness.get_by_label("Canvas").click();
     settle(&mut harness);
     harness.state_mut().canvas.new_path = "Canvas/Plan.canvas".into();
@@ -53,6 +80,16 @@ fn native_daily_properties_and_canvas_controls_save_guarded_files() {
     harness.get_by_label("Save canvas  Ctrl+S").click();
     settle(&mut harness);
     assert!(!harness.state().canvas.dirty());
+    if let Ok(path) = std::env::var("HELIOUS_NATIVE_PREVIEW_DIR") {
+        std::fs::create_dir_all(&path).unwrap();
+        harness.step();
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-canvas-dark.png"))
+            .unwrap();
+    }
+
     assert!(
         std::fs::read_to_string(vault.path().join("Canvas/Plan.canvas"))
             .unwrap()
@@ -177,6 +214,9 @@ fn native_navigation_settings_and_local_save_are_functional() {
         std::fs::create_dir_all(&path).unwrap();
         harness.state_mut().mode = 1;
         harness.step();
+        std::thread::sleep(Duration::from_millis(400));
+        harness.step();
+        settle(&mut harness);
         harness
             .render()
             .unwrap()

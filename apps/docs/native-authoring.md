@@ -1,6 +1,6 @@
 # Native authoring and reading
 
-The Phase 9 native source adds daily notes, Markdown templates, typed properties, JSON Canvas and rich reading in Rust/egui on Windows and SwiftUI/AppKit on macOS. It uses the existing vault history, OS-stored sessions and guarded server API. Neither client embeds the website. The published v0.8.1 installers predate these controls; the next installer version is being validated.
+The Phase 9 native source adds daily notes, Markdown templates, typed properties, JSON Canvas and rich reading in Rust/egui on Windows and SwiftUI/AppKit on macOS. It uses the existing vault history, OS-stored sessions and guarded server API. Neither client embeds the website. These controls are included in native 0.9; v0.8.1 predates them.
 
 ## Daily notes, templates and properties
 
@@ -25,3 +25,5 @@ Math and Mermaid have **Render preview** controls. Math uses [LaTeX-Rust](https:
 Raster images are signature-checked, decoded behind pixel/memory limits and displayed as passive previews. Audio starts only after **Play audio**; pause/resume/stop controls use native playback. PDFs render one page at a time through Windows PDF services or macOS PDFKit thumbnails, with no document scripting or interactive annotations. Encrypted/unsupported PDFs can be downloaded. A maximum of 500 pages applies. This is a visual PDF preview, not a full accessible PDF reader; use the original with your preferred reader for text selection and accessibility tools.
 
 The renderer limits note previews to 250,000 bytes, inline notes to 100,000, and documents to 12 embeds. Clear attachment previews to release their cache. No network access is needed for local folders. Server vaults still require the configured server and existing account/Space permissions. See [browser reading](./reading) for its renderer-specific controls and limits.
+
+[API 1 extensions](./extensions) add explicitly granted data-only editor commands, with preview/apply/save stages and no executable plugin loader.
