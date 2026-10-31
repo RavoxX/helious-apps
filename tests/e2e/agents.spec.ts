@@ -17,8 +17,6 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, password);
-  await page.getByLabel('New vault name').fill('Connected project');
-  await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await page.getByRole('button', { name: 'Profile for Connected developer' }).click();
   await page
     .getByRole('dialog', { name: 'Account menu' })
@@ -27,6 +25,20 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
   await expect(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
   await page.getByRole('button', { name: 'Create agent token', exact: true }).click();
   await page.getByLabel('Connection name', { exact: true }).fill('Codex test connection');
+  const createToken = page.getByRole('button', { name: 'Create token with these permissions' });
+  await expect(createToken).toBeDisabled();
+  await expect(
+    page.getByRole('heading', { name: 'Create a vault to connect your agent' }),
+  ).toBeVisible();
+  await page.getByLabel('New vault name', { exact: true }).fill('Connected project');
+  await page.getByRole('button', { name: 'Create vault and continue' }).click();
+  await expect(page.getByRole('checkbox', { name: /^Code/ })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: /^Code/ })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /^Personal/ })).toBeDisabled();
+  await expect(createToken).toBeDisabled();
+  await expect(page.getByLabel('Connection name', { exact: true })).toHaveValue(
+    'Codex test connection',
+  );
   await page.getByRole('checkbox', { name: /^Code/ }).check();
   await page
     .getByRole('checkbox', { name: 'Create and update notes, with version history', exact: true })

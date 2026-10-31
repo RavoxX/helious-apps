@@ -94,6 +94,16 @@
   padding-block: 16px;
   border-bottom: 1px solid var(--line);
 }
+.agent-vault-setup {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--color-panel);
+}
+.agent-vault-setup .secondary-button {
+  margin-top: 12px;
+}
 .grant-vault strong {
   font-size: 13px;
 }

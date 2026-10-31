@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlugZap, Copy, ArrowUpRight, ShieldCheck, Terminal, BookOpen } from 'lucide-react';
 import { api } from './api';
@@ -37,10 +37,12 @@ export function GrantChoices({
   options,
   onChange,
   requested,
+  emptyState,
 }: {
   options: ConnectionOptions;
   onChange: (grants: Grants) => void;
   requested?: string[];
+  emptyState?: ReactNode;
 }) {
   const [selected, setSelected] = useState<string[]>([]),
     [read, setRead] = useState(!requested || requested.includes('notes:read')),
@@ -137,9 +139,8 @@ export function GrantChoices({
               ))}
           </div>
         ))}
-        {!options.vaults.length && (
-          <p>Create a vault first, then return here to connect an agent.</p>
-        )}
+        {!options.vaults.length &&
+          (emptyState ?? <p>Create a vault first, then return here to connect an agent.</p>)}
       </fieldset>
       <details>
         <summary>Individual secret grants</summary>
@@ -197,7 +198,41 @@ export function AgentConnections() {
     [notice, setNotice] = useState(''),
     [confirm, setConfirm] = useState<string | null>(null);
   const [tool, setTool] = useState('Codex'),
-    [projectVault, setProjectVault] = useState('');
+    [projectVault, setProjectVault] = useState(''),
+    [vaultName, setVaultName] = useState('Code workspace'),
+    [creatingVault, setCreatingVault] = useState(false);
+  const needsPersonalConsent = options.data?.spaces.some(
+    (space) =>
+      space.kind === 'personal' &&
+      grants.spaceIds.includes(space.id) &&
+      !grants.personalConsent.includes(space.id),
+  );
+  const requirement = !options.data?.vaults.length
+    ? 'Create a vault and select a Space to enable token creation.'
+    : !grants.spaceIds.length
+      ? 'Select at least one eligible Space above to enable token creation.'
+      : !grants.scopes.length
+        ? 'Choose at least one permission above.'
+        : needsPersonalConsent
+          ? 'Confirm the Personal Space sharing checkbox above before continuing.'
+          : '';
+  async function createConnectionVault() {
+    if (creatingVault || !vaultName.trim()) return;
+    setCreatingVault(true);
+    setError('');
+    try {
+      await api('/vaults', 'POST', { name: vaultName.trim() });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['agent-options'] }),
+        client.invalidateQueries({ queryKey: ['vaults'] }),
+      ]);
+      setNotice('Vault created. Select the Code Space to choose what this agent can access.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to create the vault.');
+    } finally {
+      setCreatingVault(false);
+    }
+  }
   async function act(work: () => Promise<void>) {
     setBusy(true);
     setError('');
@@ -253,6 +288,7 @@ export function AgentConnections() {
             className="connection-form"
             onSubmit={(event) => {
               event.preventDefault();
+              if (busy || creatingVault || requirement) return;
               const data = new FormData(event.currentTarget);
               void act(async () => {
                 const result = await api<{ token: string }>('/agents/tokens', 'POST', {
@@ -282,7 +318,41 @@ export function AgentConnections() {
                 </select>
               </label>
             </div>
-            <GrantChoices options={options.data} onChange={setGrants} />
+            <GrantChoices
+              options={options.data}
+              onChange={setGrants}
+              emptyState={
+                <div className="agent-vault-setup">
+                  <h3>Create a vault to connect your agent</h3>
+                  <p>
+                    A vault stores your notes. It starts with Code and Personal Spaces. Nothing is
+                    shared until you select an eligible Space.
+                  </p>
+                  <label htmlFor="agent-vault-name">New vault name</label>
+                  <input
+                    id="agent-vault-name"
+                    value={vaultName}
+                    maxLength={100}
+                    disabled={creatingVault}
+                    onChange={(event) => setVaultName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        void createConnectionVault();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={creatingVault || !vaultName.trim()}
+                    onClick={() => void createConnectionVault()}
+                  >
+                    {creatingVault ? 'Creating vault…' : 'Create vault and continue'}
+                  </button>
+                </div>
+              }
+            />
             <label>
               Confirm with your current password
               <input
@@ -295,10 +365,16 @@ export function AgentConnections() {
             </label>
             <button
               className="primary-button"
-              disabled={busy || !grants.spaceIds.length || !grants.scopes.length}
+              disabled={busy || creatingVault || !!requirement}
+              aria-describedby={requirement ? 'agent-token-requirement' : undefined}
             >
               {busy ? 'Creating…' : 'Create token with these permissions'}
             </button>
+            {requirement && (
+              <p id="agent-token-requirement" role="status">
+                {requirement}
+              </p>
+            )}
           </form>
         )}
         {options.error && <p role="alert">{options.error.message}</p>}

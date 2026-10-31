@@ -6,6 +6,8 @@ Open **Profile → AI connections** to create/revoke tokens, create a Code Space
 
 ## Choose what an agent can access
 
+If you have no vault, the token form offers **Create vault and continue**. Enter a vault name there; your connection details stay in the form. The new vault starts with Code and Personal Spaces, with neither automatically granted to the agent. Select an eligible Space and at least one permission to enable token creation. A message below the button explains any remaining requirement; creating a vault alone does not grant access.
+
 Personal defaults to no agent access. Code is eligible for explicitly scoped grants; eligibility alone grants nothing. Select the vaults and Spaces deliberately, then choose `notes:read`, `notes:write` or individual `secrets:read:<secretId>` scopes. Note writing also requires reading. Each operation intersects the stored grant with the current Space policy. Sharing Personal additionally requires an explicit confirmation. Change Space policies in Vaults before granting a currently blocked Space.
 
 Creating a personal token requires password or authenticator reauthentication. The UI asks for your password. Tokens have 256 random bits, appear once, and are stored only as SHA-256 hashes. Personal tokens expire after 1–365 days; the default is 30 days. Up to 100 active token records may be created per account. Token metadata remains for 30 days after the connection expires, so expired connections can be reviewed; authentication always checks expiry in code.
