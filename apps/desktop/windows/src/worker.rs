@@ -5,6 +5,7 @@ use std::{
     sync::mpsc::{self, Receiver, Sender},
 };
 pub struct Worker {
+    pub context: eframe::egui::Context,
     pub send: Sender<(String, Value)>,
     pub receive: Receiver<(String, Result<Value>)>,
 }
@@ -12,6 +13,7 @@ impl Worker {
     pub fn new(folder: PathBuf, context: eframe::egui::Context) -> Self {
         let (send, requests) = mpsc::channel::<(String, Value)>();
         let (reply, receive) = mpsc::channel();
+        let repaint = context.clone();
         std::thread::spawn(move || {
             let mut engine = Engine::new(folder);
             while let Ok((tag, value)) = requests.recv() {
@@ -22,9 +24,13 @@ impl Worker {
                 if reply.send((tag, result)).is_err() {
                     break;
                 }
-                context.request_repaint();
+                repaint.request_repaint();
             }
         });
-        Self { send, receive }
+        Self {
+            send,
+            receive,
+            context,
+        }
     }
 }

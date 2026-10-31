@@ -154,6 +154,17 @@ impl Engine {
     pub fn execute(&mut self, req: Value) -> Result<Value> {
         let op = field(&req, "operation")?;
         match op {
+            "reading_document" | "render_formula" | "render_diagram" | "reading_embed"
+            | "highlight_code" | "render_pdf" | "reading_resolve" | "reading_download" => {
+                self.reading_operation(req)
+            }
+            "validate_canvas" => {
+                let document = crate::canvas::parse(field(&req, "text")?)?;
+                Ok(json!({"document":document}))
+            }
+            "properties" | "replace_properties" | "edit_property" | "open_daily"
+            | "new_from_template" | "canvas_list" | "canvas_read" | "canvas_save"
+            | "canvas_delete" => self.authoring_operation(req),
             "check_update" => self.runtime.block_on(crate::updater::check()),
             "download_update" => {
                 self.pending_update = Some(self.runtime.block_on(crate::updater::prepare())?);
@@ -175,7 +186,7 @@ impl Engine {
                     }
                 }
                 Ok(
-                    json!({"recent":self.registry.recent,"server":self.registry.server,"cloudOrigin":CLOUD_ORIGIN,"settings":self.registry.settings,"changedVaults":changed,"version":"0.8.1"}),
+                    json!({"recent":self.registry.recent,"server":self.registry.server,"cloudOrigin":CLOUD_ORIGIN,"settings":self.registry.settings,"changedVaults":changed,"version":env!("CARGO_PKG_VERSION")}),
                 )
             }
             "open_local" => self.open(field(&req, "path")?.into()),

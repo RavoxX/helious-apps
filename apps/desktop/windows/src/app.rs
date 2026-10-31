@@ -1,6 +1,5 @@
 use crate::{graph::Graph, worker::Worker};
 use eframe::egui::{self, Color32, RichText};
-use egui_commonmark::CommonMarkCache;
 use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::{
@@ -11,6 +10,7 @@ use std::{
 pub enum Page {
     Workspace,
     Graph,
+    Canvas,
     Sync,
     Account,
     Settings,
@@ -47,7 +47,6 @@ pub struct HeliousApp {
     pub font_size: f32,
     pub wrap: bool,
     pub logo: egui::TextureHandle,
-    pub markdown_cache: CommonMarkCache,
     pub graph: Graph,
     pub pending_navigation: Option<Value>,
     pub confirm_close: bool,
@@ -68,6 +67,9 @@ pub struct HeliousApp {
     pub installing: bool,
     pub next_update: Instant,
     pub queued: VecDeque<(String, Value)>,
+    pub authoring: crate::authoring::AuthoringState,
+    pub canvas: crate::canvas::CanvasState,
+    pub reading: crate::reading::ReadingState,
 }
 pub fn string<'a>(value: &'a Value, key: &str) -> &'a str {
     value[key].as_str().unwrap_or("")
@@ -140,7 +142,6 @@ impl HeliousApp {
             font_size: 16.0,
             wrap: true,
             logo,
-            markdown_cache: CommonMarkCache::default(),
             graph: Graph::default(),
             pending_navigation: None,
             confirm_close: false,
@@ -161,13 +162,17 @@ impl HeliousApp {
             installing: false,
             next_update: Instant::now() + Duration::from_secs(20),
             queued: VecDeque::new(),
+            authoring: crate::authoring::AuthoringState::default(),
+            canvas: crate::canvas::CanvasState::default(),
+            reading: crate::reading::ReadingState::default(),
         };
         app.request("status", json!({"operation":"status"}));
         app
     }
     pub fn dirty(&self) -> bool {
-        !self.note.is_null()
-            && (self.markdown != self.saved || self.space != string(&self.note, "spaceId"))
+        self.canvas.dirty()
+            || (!self.note.is_null()
+                && (self.markdown != self.saved || self.space != string(&self.note, "spaceId")))
     }
     pub fn request(&mut self, tag: &str, value: Value) {
         if self.pending.is_some() {
@@ -199,6 +204,10 @@ impl HeliousApp {
         }
     }
     pub fn navigate(&mut self, value: Value) {
+        if self.pending.is_some() {
+            self.error = "Wait for the current operation before changing notes or vaults.".into();
+            return;
+        }
         if self.dirty() {
             self.pending_navigation = Some(value);
             self.confirm_close = true;
@@ -210,6 +219,8 @@ impl HeliousApp {
         let tag = value["operation"].as_str().unwrap_or("").to_string();
         if tag == "open_server" {
             self.source = "server".into();
+            self.canvas = crate::canvas::CanvasState::default();
+            self.authoring = crate::authoring::AuthoringState::default();
             self.vault = value["vault"].clone();
             self.note = Value::Null;
             self.markdown.clear();
@@ -232,6 +243,10 @@ impl HeliousApp {
         self.navigate(req);
     }
     pub fn save(&mut self) {
+        if self.canvas.dirty() {
+            self.canvas_save();
+            return;
+        }
         if self.note.is_null() {
             return;
         }
@@ -293,6 +308,50 @@ impl HeliousApp {
                 }
             };
             match tag.as_str() {
+                "reading_document" => {
+                    if data["key"] == self.reading.key {
+                        match serde_json::from_value(data["blocks"].clone()) {
+                            Ok(blocks) => self.reading.blocks = std::sync::Arc::new(blocks),
+                            Err(_) => self.error = "Cannot display this reading preview.".into(),
+                        }
+                    }
+                }
+                "reading_asset" => {
+                    if let Err(error) = self.reading.asset(data, &self.worker.context) {
+                        self.error = error;
+                    }
+                }
+                "canvas_list" => {
+                    self.canvas.files = data["files"].as_array().cloned().unwrap_or_default()
+                }
+                "canvas_read" => self.canvas.load(data),
+                "canvas_created" => {
+                    self.canvas
+                        .load(json!({"file":data["file"],"document":{"nodes":[],"edges":[]}}));
+                    self.canvas.new_path.clear();
+                    self.request("canvas_list", self.scope("canvas_list"));
+                }
+                "canvas_saved" => {
+                    self.canvas.file = data["file"].clone();
+                    self.canvas.saved = self.canvas.saving.clone();
+                    self.message = "Canvas saved.".into();
+                    self.request("canvas_list", self.scope("canvas_list"));
+                }
+                "canvas_deleted" => {
+                    self.canvas = crate::canvas::CanvasState::default();
+                    self.request("canvas_list", self.scope("canvas_list"));
+                }
+                "properties" | "edit_property" => {
+                    if self.authoring.base != self.markdown {
+                        self.error="Your draft changed while editing properties. Read them again before applying changes.".into();
+                    } else {
+                        self.authoring.properties = data["properties"].clone();
+                        if tag == "edit_property" {
+                            self.markdown = string(&data, "markdown").into();
+                            self.message = "Properties updated in draft. Save to keep them.".into();
+                        }
+                    }
+                }
                 "status" => {
                     let first = self.status.is_null();
                     let changed = data["changedVaults"]
@@ -326,6 +385,8 @@ impl HeliousApp {
                     }
                 }
                 "open_local" | "open_recent" => {
+                    self.canvas = crate::canvas::CanvasState::default();
+                    self.authoring = crate::authoring::AuthoringState::default();
                     self.source = "local".into();
                     self.vault = json!({"id":data["id"],"name":data["name"],"path":data["path"]});
                     self.spaces = data["spaces"].as_array().cloned().unwrap_or_default();
@@ -339,7 +400,7 @@ impl HeliousApp {
                 }
                 "notes" => {
                     self.notes = data["notes"].as_array().cloned().unwrap_or_default();
-                    if !self.note.is_null() && !self.dirty() {
+                    if self.page == Page::Workspace && !self.note.is_null() && !self.dirty() {
                         let id = string(&self.note, "id").to_string();
                         let mut req = self.scope("read_note");
                         req["id"] = json!(id);
@@ -347,6 +408,7 @@ impl HeliousApp {
                     }
                 }
                 "read_note" | "save_note" | "create_note" => {
+                    self.reading = crate::reading::ReadingState::default();
                     self.note = data["note"].clone();
                     self.markdown = string(&self.note, "markdown").into();
                     self.saved = self.markdown.clone();
@@ -387,6 +449,7 @@ impl HeliousApp {
                     self.remote_spaces = data["spaces"].as_array().cloned().unwrap_or_default();
                 }
                 "logout" => {
+                    self.reading = crate::reading::ReadingState::default();
                     self.me = Value::Null;
                     self.status["server"] = Value::Null;
                     self.server_vaults.clear();
@@ -536,7 +599,7 @@ impl eframe::App for HeliousApp {
                 ui.small(if self.dirty() {
                     "Unsaved draft"
                 } else {
-                    "Helious native · 0.8.1"
+                    "Helious native · 0.9.0"
                 });
                 if !self.message.is_empty() {
                     ui.separator();
@@ -551,6 +614,7 @@ impl eframe::App for HeliousApp {
                 for (page, label) in [
                     (Page::Workspace, "Workspace"),
                     (Page::Graph, "Graph"),
+                    (Page::Canvas, "Canvas"),
                     (Page::Sync, "Sync"),
                     (Page::Account, "Account"),
                     (Page::Settings, "Settings"),
@@ -563,6 +627,9 @@ impl eframe::App for HeliousApp {
                         .clicked()
                     {
                         self.page = page;
+                        if page == Page::Canvas && !self.vault.is_null() {
+                            self.request("canvas_list", self.scope("canvas_list"));
+                        }
                         if page == Page::Graph && !self.vault.is_null() {
                             self.request("graph", self.scope("graph"));
                         }
@@ -632,6 +699,7 @@ impl eframe::App for HeliousApp {
             }
             match self.page {
                 Page::Workspace => self.workspace(ui),
+                Page::Canvas => self.canvas_page(ui),
                 Page::Graph => {
                     if let Some(id) = self.graph.show(ui) {
                         self.select_note(&id);
@@ -670,7 +738,7 @@ impl eframe::App for HeliousApp {
             ui.label("This note has unsaved changes. Save it before leaving, or discard the draft.");
             ui.horizontal(|ui|{if ui.button("Keep editing").clicked(){self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}
 if ui.button("Save draft").clicked(){self.save();self.confirm_close=false;self.pending_quit=false;self.pending_navigation=None;}
-if ui.button("Discard and continue").clicked(){self.markdown=self.saved.clone();self.space=string(&self.note,"spaceId").into();self.confirm_close=false;if self.pending_quit{ctx.send_viewport_cmd(egui::ViewportCommand::Close);}else if let Some(value)=self.pending_navigation.take(){self.perform_navigation(value);}}});
+if ui.button("Discard and continue").clicked(){self.canvas.discard();self.markdown=self.saved.clone();self.space=string(&self.note,"spaceId").into();self.confirm_close=false;if self.pending_quit{ctx.send_viewport_cmd(egui::ViewportCommand::Close);}else if let Some(value)=self.pending_navigation.take(){self.perform_navigation(value);}}});
         });
         }
     }

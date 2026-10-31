@@ -1,6 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod app;
+mod authoring;
+mod canvas;
 mod graph;
+mod reading;
 mod screens;
 #[cfg(test)]
 mod ui_tests;

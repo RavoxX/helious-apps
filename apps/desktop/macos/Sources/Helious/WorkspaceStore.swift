@@ -1,9 +1,9 @@
 import SwiftUI
 import AppKit
 enum Destination: String, CaseIterable, Identifiable {
-    case workspace = "Workspace", graph = "Graph", sync = "Sync", account = "Account", settings = "Settings"
+    case workspace = "Workspace", graph = "Graph", canvas = "Canvas", sync = "Sync", account = "Account", settings = "Settings"
     var id: String { rawValue }
-    var symbol: String {switch self {case .workspace: return "doc.text"; case .graph: return "point.3.connected.trianglepath.dotted"; case .sync: return "arrow.triangle.2.circlepath"; case .account: return "person.crop.circle"; case .settings: return "gearshape"}}
+    var symbol: String {switch self {case .workspace: return "doc.text"; case .graph: return "point.3.connected.trianglepath.dotted"; case .canvas: return "square.grid.2x2"; case .sync: return "arrow.triangle.2.circlepath"; case .account: return "person.crop.circle"; case .settings: return "gearshape"}}
 }
 @MainActor final class WorkspaceStore: ObservableObject {
     let bridge = NativeBridge()
@@ -48,8 +48,12 @@ enum Destination: String, CaseIterable, Identifiable {
     @Published var remoteSpaces: [Space] = []
     @Published var mappings: [String: String] = [:]
     @Published var personalConfirmed = false
+    @Published var properties: [String: Any] = [:]
+    var propertyBase = ""
+    @Published var canvas = NativeCanvasStore()
+    var canvasSaving = BoardDocument()
     var deferred: (() -> Void)?
-    var dirty: Bool {note != nil && (markdown != saved || noteSpace != note?.spaceId)}
+    var dirty: Bool {canvas.dirty || (note != nil && (markdown != saved || noteSpace != note?.spaceId))}
     var colorScheme: ColorScheme? {appearance == "system" ? nil : appearance == "light" ? .light : .dark}
     func start() async {
         do {
@@ -75,17 +79,27 @@ enum Destination: String, CaseIterable, Identifiable {
     }
     func handle(_ tag: String, _ data: [String: Any]) throws {
         switch tag {
+        case "canvas_list": canvas.files = data["files"] as? [[String: Any]] ?? []
+        case "canvas_read": try canvas.load(data)
+        case "canvas_created": try canvas.load(["file": data["file"] ?? [:], "document": ["nodes": [], "edges": []]]); send("canvas_list", scope("canvas_list"))
+        case "canvas_saved": canvas.file = data["file"] as? [String: Any] ?? [:]; canvas.saved = canvasSaving; message = "Canvas saved."; send("canvas_list", scope("canvas_list"))
+        case "canvas_deleted": canvas = NativeCanvasStore(); send("canvas_list", scope("canvas_list"))
+        case "properties", "edit_property":
+            guard propertyBase == markdown else {error = "Your draft changed while editing properties. Read them again before applying changes."; return}
+            properties = data["properties"] as? [String: Any] ?? [:]
+            if tag == "edit_property" {markdown = data["markdown"] as? String ?? markdown; message = "Properties updated in draft. Save to keep them."}
         case "status":
             consumeStatus(data)
             if source == "local", let id = vault?.id, (data["changedVaults"] as? [String] ?? []).contains(id) {
                 if dirty {message = "The folder changed elsewhere. Your draft is preserved."} else {refreshNotes()}
             }
         case "open_local", "open_recent":
+            canvas = NativeCanvasStore()
             vault = try decode(data, as: Vault.self); source = "local"; spaces = try decode(data["spaces"] ?? [], as: [Space].self)
             syncConfig = data["sync"] as? [String: Any] ?? [:]; note = nil; markdown = ""; saved = ""; notes = []; destination = .workspace; refreshNotes()
         case "notes":
             notes = try decode(data["notes"] ?? [], as: [Note].self)
-            if let id = note?.id, !dirty {read(id)}
+            if let id = note?.id, !dirty, destination == .workspace {read(id)}
         case "read_note", "save_note", "create_note":
             note = try decode(data["note"] ?? [:], as: Note.self); markdown = note?.markdown ?? ""; saved = markdown; noteSpace = note?.spaceId ?? ""; versions = []; historical = ""
             if tag != "read_note" {message = "Note saved."; showNewNote = false; newPath = ""; refreshNotes()}
@@ -110,15 +124,16 @@ enum Destination: String, CaseIterable, Identifiable {
         default: break
         }
     }
-    func guardDraft(_ action: @escaping () -> Void) {if dirty {deferred = action; showDraftAlert = true} else {action()}}
-    func discardAndContinue() {markdown = saved; noteSpace = note?.spaceId ?? ""; let action = deferred; deferred = nil; action?()}
+    func guardDraft(_ action: @escaping () -> Void) {guard !busy else {error = "Wait for the current operation before changing notes or vaults."; return}; if dirty {deferred = action; showDraftAlert = true} else {action()}}
+    func discardAndContinue() {canvas.discard(); markdown = saved; noteSpace = note?.spaceId ?? ""; let action = deferred; deferred = nil; action?()}
     func openFolder() {guardDraft { [weak self] in guard let self else {return}; let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true; panel.title = "Open or create a Helious vault"; if panel.runModal() == .OK, let url = panel.url {self.send("open_local", ["operation": "open_local", "path": url.path])}}}
     func openRecent(_ vault: Vault) {guardDraft { [weak self] in self?.send("open_recent", ["operation": "open_recent", "id": vault.id])}}
-    func openCloud(_ value: Vault) {guardDraft { [weak self] in guard let self else {return}; self.vault = value; self.source = "server"; self.note = nil; self.markdown = ""; self.saved = ""; self.destination = .workspace; self.api("spaces", "/api/vaults/\(value.id)/spaces")}}
+    func openCloud(_ value: Vault) {guardDraft { [weak self] in guard let self else {return}; self.canvas = NativeCanvasStore(); self.vault = value; self.source = "server"; self.note = nil; self.markdown = ""; self.saved = ""; self.destination = .workspace; self.api("spaces", "/api/vaults/\(value.id)/spaces")}}
     func refreshNotes() {guard vault != nil else {return}; send("notes", scope("notes"))}
     func read(_ id: String) {var value = scope("read_note"); value["id"] = id; send("read_note", value)}
     func select(_ id: String) {guardDraft { [weak self] in self?.read(id)}}
-    func save() {guard let note else {return}; var value = scope("save_note"); value["id"] = note.id; value["body"] = ["path": note.path, "markdown": markdown, "spaceId": noteSpace, "revision": note.revision ?? 1, "hash": note.hash ?? ""]; send("save_note", value)}
+    func save() {if canvas.dirty {saveCanvas(); return}; guard let note else {return}; var value = scope("save_note"); value["id"] = note.id; value["body"] = ["path": note.path, "markdown": markdown, "spaceId": noteSpace, "revision": note.revision ?? 1, "hash": note.hash ?? ""]; send("save_note", value)}
+    func saveCanvas() {guard !canvas.file.isEmpty, !busy else {return}; do {canvasSaving = canvas.document; var req = scope("canvas_save"); req["path"] = canvas.file["path"]; req["spaceId"] = canvas.file["spaceId"]; req["expected"] = canvas.file; req["text"] = String(data: try JSONEncoder().encode(canvasSaving), encoding: .utf8) ?? ""; send("canvas_saved", req)} catch {self.error = error.localizedDescription}}
     func createNote() {guard !dirty else {error = "Save your current draft before creating a note."; return}; var value = scope("create_note"); value["body"] = ["path": newPath.hasSuffix(".md") ? newPath : newPath + ".md", "markdown": "", "spaceId": spaces.first(where: {$0.kind == "personal"})?.id ?? ""]; send("create_note", value)}
     func deleteNote() {guard let note, !dirty else {return}; var value = scope("delete_note"); value["id"] = note.id; value["body"] = ["path": note.path, "hash": note.hash ?? "", "revision": note.revision ?? 1]; send("delete_note", value)}
     func login() {let request: [String: Any] = ["operation": "login", "origin": customServer ? origin : cloud, "email": email, "password": password, "code": factor]; if !customServer {origin = cloud}; send("login", request); password = ""; factor = ""}

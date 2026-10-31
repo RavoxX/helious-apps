@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     Button("Open vault folder…") {store.openFolder()}.keyboardShortcut("o", modifiers: [.command, .shift])
                     Button("New note") {store.showNewNote = true}.keyboardShortcut("n").disabled(store.vault == nil)
                 }
-                CommandGroup(replacing: .saveItem) {Button("Save note") {store.save()}.keyboardShortcut("s").disabled(store.note == nil || store.busy)}
+                CommandGroup(replacing: .saveItem) {Button("Save") {store.save()}.keyboardShortcut("s").disabled((store.note == nil && store.canvas.file.isEmpty) || store.busy)}
             }
         Settings {SettingsView().environmentObject(store).preferredColorScheme(store.colorScheme).frame(width: 580, height: 480)}
     }

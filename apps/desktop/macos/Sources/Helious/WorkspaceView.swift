@@ -22,6 +22,7 @@ struct WorkspaceView: View {
                 }
                 switch store.destination ?? .workspace {
                 case .workspace: notesWorkspace
+                case .canvas: NativeCanvasView(model: store.canvas)
                 case .account: AccountView()
                 case .settings: SettingsView()
                 case .sync: SyncView()
@@ -66,6 +67,7 @@ struct WorkspaceView: View {
             HSplitView {
                 VStack(spacing: 0) {
                     TextField("Search notes…", text: $store.search).textFieldStyle(.roundedBorder).padding(12)
+                    AuthoringView()
                     List {
                         ForEach(store.notes.filter {store.search.isEmpty || $0.path.localizedCaseInsensitiveContains(store.search) || ($0.title ?? "").localizedCaseInsensitiveContains(store.search)}) {note in
                             Button {store.select(note.id)} label: {HStack {Image(systemName: "doc.text").foregroundStyle(.secondary); VStack(alignment: .leading, spacing: 3) {Text(note.title ?? URL(fileURLWithPath: note.path).lastPathComponent).lineLimit(1); Text(note.path).font(.caption).foregroundStyle(.secondary).lineLimit(1)}; Spacer()}.padding(.vertical, 4)}.buttonStyle(.plain).listRowBackground(store.note?.id == note.id ? Color.accentColor.opacity(0.14) : Color.clear)
@@ -88,6 +90,7 @@ struct NoteEditorView: View {
                     ScrollView {VStack(alignment: .leading) {ForEach(Array(store.versions.enumerated()), id: \.offset) {_, value in Button("Revision \(value["revision"] as? Int ?? 0) · \(value["recordedAt"] as? String ?? "")") {store.history(value["revision"] as? Int)}}}.frame(maxWidth: .infinity, alignment: .leading)}.frame(maxHeight: 140)
                     if !store.historical.isEmpty {ScrollView {Text(store.historical).font(.system(.body, design: .monospaced)).textSelection(.enabled)}.frame(maxHeight: 160); Button("Use as draft") {store.markdown = store.historical; store.versions = []; store.historical = ""}}
                 }.padding(16)}
+                PropertiesView()
                 Divider()
                 if store.mode == "Split" {HSplitView {source; preview}} else if store.mode == "Reading" {preview} else {source}
             }
@@ -98,7 +101,5 @@ struct NoteEditorView: View {
         } else {ContentUnavailableView("Start with a note.", systemImage: "doc.text", description: Text("Choose a file from the explorer, or create one."))}
     }
     var source: some View {NativeTextEditor(text: $store.markdown, fontSize: store.fontSize, wrap: store.wrap).padding(12).disabled(store.busy)}
-    var preview: some View {ScrollView {VStack(alignment: .leading, spacing: 10) {ForEach(Array(store.markdown.replacingOccurrences(of: "\\{\\{secret:[^}\\n]+\\}\\}", with: "[secret reference]", options: .regularExpression).components(separatedBy: "\n").enumerated()), id: \.offset) {_, line in
-        if line.hasPrefix("# ") {Text(String(line.dropFirst(2))).font(.title.bold())} else if line.hasPrefix("## ") {Text(String(line.dropFirst(3))).font(.title2.bold())} else {Text((try? AttributedString(markdown: line)) ?? AttributedString(line)).textSelection(.enabled)}
-    }}.frame(maxWidth: 760, alignment: .leading).padding(28).frame(maxWidth: .infinity, alignment: .center)}}
+    var preview: some View {NativeReadingView()}
 }

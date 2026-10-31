@@ -1,6 +1,6 @@
 [package]
 name = "helious-native"
-version = "0.8.1"
+version = "0.9.0"
 edition = "2021"
 license = "Apache-2.0"
 rust-version = "1.95"
@@ -24,3 +24,14 @@ fs2 = "0.4"
 regex = "1"
 ed25519-dalek = "2"
 semver = "1"
+yaml-edit = "=0.3.2"
+serde_yaml_ng = "0.10"
+pulldown-cmark = "0.13"
+latex-rust = "=1.0.2"
+mermaid-rs-renderer = { version = "=0.3.1", default-features = false }
+resvg = "0.45"
+syntect = { version = "5.3", default-features = false, features = ["default-syntaxes", "default-themes", "regex-fancy"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
+percent-encoding = "2"
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Data_Pdf", "Storage_Streams", "Win32_System_WinRT"] }

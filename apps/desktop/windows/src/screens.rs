@@ -1,6 +1,5 @@
 use crate::app::{string, HeliousApp, Page};
 use eframe::egui::{self, RichText};
-use egui_commonmark::CommonMarkViewer;
 use serde_json::{json, Value};
 impl HeliousApp {
     pub fn workspace(&mut self, ui: &mut egui::Ui) {
@@ -27,6 +26,7 @@ impl HeliousApp {
             ui.horizontal(|ui|{ui.add(egui::TextEdit::singleline(&mut self.new_path).hint_text("Folder/New note.md").desired_width(142.0));if ui.add_enabled(!self.new_path.trim().is_empty()&&self.pending.is_none(),egui::Button::new("+")).on_hover_text("Create note").clicked(){
                 if self.dirty(){self.error="Save or discard the current draft before creating a note.".into();}else{let path=if self.new_path.ends_with(".md"){self.new_path.clone()}else{format!("{}.md",self.new_path)};let mut req=self.scope("create_note");req["body"]=json!({"path":path,"markdown":"","spaceId":self.spaces.iter().find(|s|s["kind"]=="personal").map(|s|s["id"].clone()).unwrap_or(Value::Null)});self.request("create_note",req);}
             }});
+            self.authoring_tools(ui);
             ui.separator();
             let filter=self.filter.to_lowercase();let notes:Vec<_>=self.notes.iter().filter(|n|string(n,"path").to_lowercase().contains(&filter)||string(n,"title").to_lowercase().contains(&filter)).cloned().collect();
             egui::ScrollArea::vertical().id_salt("notes-list").show(ui,|ui|{
@@ -55,12 +55,13 @@ if ui.button("History").clicked(){let mut req=self.scope("history");req["id"]=se
                 egui::ScrollArea::vertical().max_height(160.0).show(ui,|ui|{for version in self.history["versions"].as_array().cloned().unwrap_or_default().iter().take(50){if ui.button(format!("Revision {} · {}",version["revision"],string(version,"recordedAt"))).clicked(){let mut req=self.scope("history");req["id"]=self.note["id"].clone();req["revision"]=version["revision"].clone();self.request("version",req);}}});
                 if !self.version.is_null(){ui.label("Historical content (read only)");egui::ScrollArea::vertical().max_height(180.0).show(ui,|ui|{ui.monospace(helious_native::knowledge::mask_secrets(string(&self.version,"markdown")));});if ui.button("Use this content as a draft").clicked(){self.markdown=string(&self.version,"markdown").into();self.version=Value::Null;self.history=Value::Null;}}
             });}
+            self.properties_panel(ui);
             let editor=|ui:&mut egui::Ui,app:&mut HeliousApp|{
                 egui::ScrollArea::both().id_salt("source-editor").show(ui,|ui|{
                     ui.add_enabled(app.pending.as_deref()!=Some("save_note"),egui::TextEdit::multiline(&mut app.markdown).font(egui::FontId::monospace(app.font_size)).desired_width(if app.wrap{ui.available_width()}else{10000.0}).desired_rows(35).code_editor()).on_hover_text("Markdown source editor");
                 });
             };
-            let preview=|ui:&mut egui::Ui,app:&mut HeliousApp|{egui::ScrollArea::vertical().id_salt("markdown-preview").show(ui,|ui|{ui.add_space(18.0);CommonMarkViewer::new().show(ui,&mut app.markdown_cache,&helious_native::knowledge::mask_secrets(&app.markdown));});};
+            let preview=|ui:&mut egui::Ui,app:&mut HeliousApp|{app.reading_preview(ui);};
             if self.mode==2{ui.columns(2,|columns|{editor(&mut columns[0],self);preview(&mut columns[1],self);});}else if self.mode==1{preview(ui,self);}else{editor(ui,self);}
         });
     }
@@ -155,7 +156,7 @@ if self.update_ready&&ui.add_enabled(self.pending.is_none()&&!self.dirty(),egui:
             ui.add_space(15.0);if ui.add_enabled(self.settings_dirty&&self.pending.is_none(),egui::Button::new("Save settings")).clicked(){self.request("settings",json!({"operation":"settings","settings":{"theme":self.theme,"fontSize":self.font_size as u64,"wrap":self.wrap,"automaticChecks":self.automatic_checks,"automaticInstall":self.automatic_install}}));}
             ui.add_space(28.0);ui.heading("Storage");ui.label("Local vaults contain plain Markdown and a .helious folder for history and sync checkpoints. Back up both.");ui.weak(self.data_folder.to_string_lossy());if ui.button("Open desktop settings folder").clicked(){let _=open::that(&self.data_folder);}
             ui.add_space(24.0);ui.heading("Keyboard shortcuts");egui::Grid::new("shortcuts").spacing([28.0,10.0]).show(ui,|ui|{for (key,action) in [("Ctrl+S","Save note"),("Ctrl+O","Open local folder"),("Ctrl+,","Settings")]{ui.monospace(key);ui.label(action);ui.end_row();}});
-            ui.add_space(24.0);ui.heading("About");ui.label("Helious 0.8.1 · Rust / egui / eframe / wgpu");ui.label("Windows uses a native rendered interface, with no webview and no application menu strip.");
+            ui.add_space(24.0);ui.heading("About");ui.label("Helious 0.9.0 · Rust / egui / eframe / wgpu");ui.label("Windows uses a native rendered interface, with no webview and no application menu strip.");
         });
     }
     pub fn sync(&mut self, ui: &mut egui::Ui) {

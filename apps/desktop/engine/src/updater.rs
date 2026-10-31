@@ -32,7 +32,7 @@ pub struct PreparedUpdate {
 }
 fn client() -> Result<reqwest::Client> {
     reqwest::Client::builder()
-        .user_agent("Helious-Updater/0.8.1")
+        .user_agent(concat!("Helious-Updater/", env!("CARGO_PKG_VERSION")))
         .timeout(std::time::Duration::from_secs(180))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
             if attempt.previous().len() > 5 {

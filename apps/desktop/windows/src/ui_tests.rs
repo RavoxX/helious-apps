@@ -3,6 +3,62 @@ use eframe::egui;
 use egui_kittest::{kittest::Queryable, Harness};
 use serde_json::json;
 use std::time::{Duration, Instant};
+#[test]
+fn native_daily_properties_and_canvas_controls_save_guarded_files() {
+    let folder = tempfile::tempdir().unwrap();
+    let vault = tempfile::tempdir().unwrap();
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(1600.0, 1100.0))
+        .with_accessibility_check(true)
+        .build_eframe(|cc| HeliousApp::with_folder(cc, folder.path().into()));
+    harness.state_mut().automatic_checks = false;
+    harness.state_mut().next_poll = Instant::now() + Duration::from_secs(3600);
+    settle(&mut harness);
+    harness.state_mut().request(
+        "open_local",
+        json!({"operation":"open_local","path":vault.path()}),
+    );
+    settle(&mut harness);
+    harness.get_by_label("Daily notes & templates").click();
+    harness.step();
+    harness.state_mut().authoring.day = "2026-10-31".into();
+    harness.step();
+    harness.get_by_label("Open daily note").click();
+    settle(&mut harness);
+    assert_eq!(harness.state().note["path"], "Daily/2026-10-31.md");
+    harness.state_mut().markdown =
+        "---\n# Keep my comment\nstatus: draft\n---\n# Daily body".into();
+    harness.state_mut().authoring.property = "approved".into();
+    harness.state_mut().authoring.kind = "boolean".into();
+    harness.state_mut().authoring.value = "true".into();
+    harness.get_by_label("Properties").click();
+    harness.step();
+    harness.get_by_label("Apply property to draft").click();
+    settle(&mut harness);
+    assert!(harness.state().markdown.contains("# Keep my comment"));
+    assert!(harness.state().markdown.contains("true"));
+    harness.state_mut().save();
+    settle(&mut harness);
+    harness.get_by_label("Canvas").click();
+    settle(&mut harness);
+    harness.state_mut().canvas.new_path = "Canvas/Plan.canvas".into();
+    harness.step();
+    harness.get_by_label("Create canvas").click();
+    settle(&mut harness);
+    harness.state_mut().canvas.content = "Native canvas card".into();
+    harness.step();
+    harness.get_by_label("Add card").click();
+    harness.step();
+    assert!(harness.state().canvas.dirty());
+    harness.get_by_label("Save canvas  Ctrl+S").click();
+    settle(&mut harness);
+    assert!(!harness.state().canvas.dirty());
+    assert!(
+        std::fs::read_to_string(vault.path().join("Canvas/Plan.canvas"))
+            .unwrap()
+            .contains("Native canvas card")
+    );
+}
 fn settle(harness: &mut Harness<'_, HeliousApp>) {
     for _ in 0..150 {
         harness.step();

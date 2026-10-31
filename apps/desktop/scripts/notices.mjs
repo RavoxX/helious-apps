@@ -39,6 +39,7 @@ output += await readFile(join(root, '..', '..', 'NOTICE'), 'utf8');
 output += '\n\n' + (await readFile(join(root, '..', '..', 'LICENSE'), 'utf8')) + '\n\n';
 output +=
   'Dependency licenses below apply to their respective components. Helious Apps itself uses Apache 2.0 as shown above. Build-time dependencies may also be listed.\n\n';
+const missing = [];
 for (const p of [...included]
   .map((id) => packages.get(id))
   .filter((p) => p.source)
@@ -72,12 +73,18 @@ for (const p of [...included]
       .sort())
       texts.push(`fonts/${name}\n\n${await readFile(join(directory, 'fonts', name), 'utf8')}`);
   }
-  if (!texts.length)
-    throw Error(
-      `Missing bundled license text for ${p.name} ${p.version}; review its source before release.`,
+  if (p.name === 'latex-rust') {
+    texts.push(
+      `fonts/stix-two-math/OFL.txt\n\n${await readFile(join(directory, 'fonts/stix-two-math/OFL.txt'), 'utf8')}`,
     );
+  }
+  if (!texts.length) missing.push(`${p.name} ${p.version}`);
   output += `## ${p.name} ${p.version}\n\n${p.license ?? 'License: see text below'}\n${p.repository ?? ''}\n\n${texts.join('\n\n')}\n\n---\n\n`;
 }
+if (missing.length)
+  throw Error(
+    `Missing bundled license texts: ${missing.join(', ')}. Review their published sources before release.`,
+  );
 if (platform.includes('apple')) {
   const license = await readFile(join(root, 'licenses', 'Sparkle-2.10.1.txt'), 'utf8');
   output += `## Sparkle 2.10.1\n\nhttps://github.com/sparkle-project/Sparkle/tree/2.10.1\n\n${license}\n`;

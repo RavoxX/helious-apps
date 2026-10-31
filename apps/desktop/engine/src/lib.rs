@@ -1,4 +1,11 @@
+pub mod authoring;
+mod authoring_service;
+pub mod canvas;
 pub mod knowledge;
+#[cfg(windows)]
+mod pdf_windows;
+pub mod reading;
+mod reading_service;
 pub mod remote;
 mod service;
 pub mod sync;
