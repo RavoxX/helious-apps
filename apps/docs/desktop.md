@@ -6,7 +6,7 @@ Windows uses Rust/egui/eframe with wgpu rendering. macOS uses SwiftUI/AppKit wit
 
 ## Downloads and upgrading
 
-Version 0.9.4 adds native note tabs, hierarchical folder navigation, a quick switcher and command palette, find and replace, Space-scoped search and rename/move, and a reorganized Inspector. Installers and signed update feeds are published through the native desktop workflow after both platform builds pass. Platform code signing/notarization and interactive Mac UI validation remain separate from these build checks.
+[Version 0.9.4](https://github.com/RavoxX/helious-apps/releases/tag/v0.9.4) adds native note tabs, hierarchical folder navigation, a quick switcher and command palette, find and replace, Space-scoped search and rename/move, and a reorganized Inspector. Windows and universal macOS builds passed, and all eight release assets were downloaded anonymously with payload hashes and both updater signatures verified. Platform code signing/notarization and interactive Mac UI validation remain separate from these build checks.
 
 macOS 0.9.2 refreshes release discovery every fifteen minutes while automatic checks are enabled, so a continuously running app does not remain pinned to its startup release. Sparkle retains its own check/download schedule and dirty-draft install guards. Disable automatic checks to stop periodic discovery; manual checks still refresh immediately. This refresh is a GitHub metadata request, not a Cloud account request.
 
