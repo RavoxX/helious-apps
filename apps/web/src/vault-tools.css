@@ -1,0 +1,189 @@
+/* Vault header: one toolbar row, then a strip of uniform tool buttons with floating panels. */
+.vault-library .vault-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.vault-library .vault-toolbar > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.vault-library .vault-toolbar select {
+  min-width: 190px;
+  height: 38px;
+  margin: 0;
+  padding: 0 32px 0 12px;
+  font-size: 13px;
+}
+.vault-library .vault-toolbar .explorer-toggle {
+  height: 38px;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.vault-library .vault-toolbar > .workspace-command {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(300px, 100%);
+  height: 38px;
+  margin-left: auto;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--color-panel);
+  color: var(--color-muted);
+  font-size: 13px;
+}
+.vault-library .vault-toolbar > .workspace-command:hover {
+  border-color: var(--light-blue);
+  color: var(--color-ink);
+}
+.vault-library .vault-toolbar > .workspace-command kbd {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.vault-library .vault-tools {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--color-panel);
+}
+.vault-library .vault-tools > details,
+.vault-library .vault-tools > details[open] {
+  position: relative;
+  flex: none;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+}
+.vault-library .vault-tools > details > summary,
+.vault-tool-button {
+  margin: 0;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: none;
+  color: var(--color-ink);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  list-style: none;
+}
+.vault-library .vault-tools > details > summary::-webkit-details-marker {
+  display: none;
+}
+.vault-library .vault-tools > details > summary::marker {
+  content: '';
+}
+.vault-library .vault-tools > details > summary > svg,
+.vault-tool-button > svg {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--color-muted);
+}
+.vault-library .vault-tools > details > summary:hover,
+.vault-tool-button:hover {
+  background: var(--color-bg);
+}
+.vault-library .vault-tools > details[open] > summary,
+.vault-tool-button[aria-expanded='true'] {
+  border-color: var(--line);
+  background: var(--color-bg);
+}
+.vault-library .vault-tools > details[open] > summary > svg {
+  color: var(--light-blue);
+}
+.vault-tools-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--line);
+}
+.vault-library .vault-tools > .vault-new {
+  margin-left: auto;
+  color: var(--light-blue);
+  font-weight: 600;
+}
+.vault-library .vault-tools > .vault-new > svg {
+  color: currentColor;
+}
+
+/* The open panel drops into its own row under the strip, so the editor stays usable beside it.
+   The button keeps its place: the open <details> lends its children to the strip's flex row. */
+.vault-library .vault-tools > details[open] {
+  display: contents;
+}
+.vault-library .vault-tools > details[open]::details-content {
+  order: 99;
+  flex-basis: 100%;
+  width: 100%;
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+.vault-library .vault-tools > details > :not(summary) {
+  max-width: 72ch;
+  margin-top: 0;
+}
+.vault-library .vault-tools > details > :not(summary) + :not(summary) {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .vault-library .vault-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+  .vault-library .vault-toolbar > .explorer-toggle,
+  .vault-library .vault-toolbar > .workspace-command {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-left: 0;
+  }
+  .vault-library .vault-toolbar > label {
+    min-width: 0;
+  }
+  .vault-library .vault-toolbar > label select {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    max-width: none;
+    font-size: 13px;
+  }
+  .vault-library .vault-tools > .vault-new {
+    margin-left: 0;
+  }
+}

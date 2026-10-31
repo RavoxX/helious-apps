@@ -236,9 +236,6 @@
   line-height: 1.8;
 }
 @media (max-width: 760px) {
-  .app-sidebar nav button.agents-nav {
-    display: none;
-  }
   .connection-section-head,
   .connection-row {
     flex-direction: column;

@@ -9,13 +9,13 @@ test('templates, daily notes, typed properties and conflict-safe canvases', asyn
 }, info) => {
   test.setTimeout(120000);
   const email = `authoring-${info.project.name}-${Date.now()}@example.com`;
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Authoring tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('a private authoring passphrase');
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, 'a private authoring passphrase');
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByLabel('New vault name').fill('Authoring');
   await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await page.getByText('Daily notes & templates', { exact: true }).click();

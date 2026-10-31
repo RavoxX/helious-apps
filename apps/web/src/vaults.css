@@ -618,11 +618,6 @@
     min-height: 310px;
     font-size: 11px;
   }
-  .dashboard .app-sidebar nav button {
-    min-width: 0;
-    padding: 8px 9px;
-    font-size: 8px;
-  }
   .vault-empty h2 {
     font-size: 22px;
   }

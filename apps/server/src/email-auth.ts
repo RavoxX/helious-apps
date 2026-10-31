@@ -210,13 +210,8 @@ export async function registerEmailAuth(
           .collection('email_tokens')
           .updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: new Date() } });
         await Promise.all([
-          deliver(user.email, 'email-changed', `${config.PUBLIC_URL}/app/?mode=login`, user._id),
-          deliver(
-            token.targetEmail,
-            'email-changed',
-            `${config.PUBLIC_URL}/app/?mode=login`,
-            user._id,
-          ),
+          deliver(user.email, 'email-changed', `${config.PUBLIC_URL}/login`, user._id),
+          deliver(token.targetEmail, 'email-changed', `${config.PUBLIC_URL}/login`, user._id),
         ]);
       }
       return { message: 'Email verified. You can now sign in.' };
@@ -264,7 +259,7 @@ export async function registerEmailAuth(
       const sent = await deliver(
         user.email,
         'password-changed',
-        `${config.PUBLIC_URL}/app/?mode=login`,
+        `${config.PUBLIC_URL}/login`,
         user._id,
       );
       return {

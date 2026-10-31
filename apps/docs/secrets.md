@@ -1,6 +1,6 @@
 # Encrypted secrets
 
-Secrets are available in each vault's **Secrets** tab. They are separate from Markdown notes, attachments, search, graph data, note history and exports. Use **Profile → Security & access** to set up an authenticator, manage recovery codes, review pending agent requests and read the secret audit log.
+Secrets are available in each vault's **Secrets** tab. They are separate from Markdown notes, attachments, search, graph data, note history and exports. Use **Settings → Security & access** to set up an authenticator, manage recovery codes, review pending agent requests and read the secret audit log.
 
 ## Protect your account first
 
@@ -26,7 +26,7 @@ Vault and custom Space deletion refuse to proceed while active secrets exist. Th
 
 ## Agent policy and approvals
 
-Agent authentication, scoped token issuance and MCP transport are available in **Profile → AI connections**. `get_secret` requires an exact per-secret scope, current Space and secret policies, and approval where configured. The owner must have TOTP enabled. No request field can choose an agent identity. See [MCP setup](./mcp).
+Agent authentication, scoped token issuance and MCP transport are available under **AI connections** in the workspace sidebar. `get_secret` requires an exact per-secret scope, current Space and secret policies, and approval where configured. The owner must have TOTP enabled. No request field can choose an agent identity. See [MCP setup](./mcp).
 
 Agent reads will require all of: an explicit vault grant, an explicit Space grant, a current Space policy allowing agents, the secret's own **Allow explicitly scoped agent tokens** policy, and the exact `secrets:read:<secretId>` scope. `notes:read` does not grant secret access. Personal still defaults to no agent access. Agents can list only metadata for secrets they may read.
 

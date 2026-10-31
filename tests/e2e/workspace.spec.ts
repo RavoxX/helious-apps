@@ -9,13 +9,13 @@ test('independent panes, coordinated moves, bookmarks and custom hotkeys persist
   await page.setExtraHTTPHeaders({ 'X-Forwarded-For': isMobile ? '192.0.2.32' : '192.0.2.31' });
   const email = `workspace-${info.project.name}-${Date.now()}@example.com`;
   const password = 'a private workspace testing phrase';
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Writer');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, password);
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByLabel('New vault name').fill('Workspace');
   await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await expect(page.getByLabel('Current vault')).toContainText('Workspace');
@@ -91,7 +91,7 @@ test('independent panes, coordinated moves, bookmarks and custom hotkeys persist
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('split-workspace.png'), fullPage: true });
   await page.reload();
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await expect(page.locator('.notebook-pane:not([hidden])')).toHaveCount(2);
   await expect(
     page

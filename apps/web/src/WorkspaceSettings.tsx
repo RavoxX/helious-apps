@@ -1,5 +1,6 @@
 import { compileReadingCss } from './appearance';
 import { useState } from 'react';
+import { Keyboard, Type } from 'lucide-react';
 import {
   defaultShortcuts,
   shortcutLabels,
@@ -24,7 +25,10 @@ export function WorkspaceSettings({
   return (
     <>
       <details className="workspace-settings">
-        <summary>Hotkeys</summary>
+        <summary>
+          <Keyboard size={15} aria-hidden="true" />
+          Hotkeys
+        </summary>
         <form
           data-hotkey-editor
           onSubmit={(event) => {
@@ -79,7 +83,10 @@ export function WorkspaceSettings({
         </form>
       </details>
       <details className="workspace-settings reading-snippets">
-        <summary>Reading appearance</summary>
+        <summary>
+          <Type size={15} aria-hidden="true" />
+          Reading appearance
+        </summary>
         <form
           onSubmit={(event) => {
             event.preventDefault();

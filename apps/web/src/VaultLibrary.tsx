@@ -20,6 +20,7 @@ import {
   History,
   KeyRound,
   LayoutDashboard,
+  Settings2,
 } from 'lucide-react';
 import { api } from './api';
 import { AttachmentLink } from './AttachmentLink';
@@ -61,6 +62,7 @@ import './vaults.css';
 import './workspace.css';
 import './insights.css';
 import './spaces.css';
+import './vault-tools.css';
 
 interface Vault {
   id: string;
@@ -571,15 +573,23 @@ function NoteEditor({
 export function VaultLibrary({
   userId,
   local = false,
+  requestedVault,
+  createRequested = false,
+  onCreateHandled,
   onVaultChange,
 }: {
   userId: string;
   local?: boolean;
+  /** Vault chosen outside the library (sidebar, overview or URL). */
+  requestedVault?: string;
+  /** The shell's "Add a vault" control asked for the create form. */
+  createRequested?: boolean;
+  onCreateHandled?: () => void;
   onVaultChange?: (id: string | undefined) => void;
 }) {
   const client = useQueryClient();
   const [selectedSpace, setSelectedSpace] = useState('');
-  const [selectedVault, setSelectedVault] = useState<string | null>(null);
+  const [selectedVault, setSelectedVault] = useState<string | null>(requestedVault ?? null);
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [vaultName, setVaultName] = useState('');
   const [addingVault, setAddingVault] = useState(false);
@@ -654,6 +664,50 @@ export function VaultLibrary({
     vaults.data?.vaults.find((item) => item.id === selectedVault) ?? vaults.data?.vaults[0];
   const vaultId = vault?.id;
   useEffect(() => onVaultChange?.(vaultId), [vaultId, onVaultChange]);
+  const openVault = (id: string) => {
+    setSelectedVault(id);
+    setSelectedSpace('');
+    setSelectedNote(null);
+    setGraphRoot(null);
+    setQuery('');
+    setSearchDraft('');
+    setConfirmVaultDelete(false);
+  };
+  useEffect(() => {
+    if (requestedVault && requestedVault !== vaultId) openVault(requestedVault);
+    // Only react to outside requests; internal switches already report through onVaultChange.
+  }, [requestedVault]);
+  // Vault tool panels: one open at a time; Escape closes the open one and returns focus.
+  useEffect(() => {
+    const open = () =>
+      document.querySelectorAll<HTMLDetailsElement>('.vault-tools > details[open]');
+    const toggle = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLDetailsElement) || !target.open) return;
+      if (!target.parentElement?.classList.contains('vault-tools')) return;
+      for (const other of open()) if (other !== target) other.open = false;
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (!(event.target instanceof Element) || !event.target.closest('.vault-tools')) return;
+      for (const panel of open()) {
+        panel.open = false;
+        panel.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('toggle', toggle, true);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('toggle', toggle, true);
+      document.removeEventListener('keydown', key);
+    };
+  }, []);
+  useEffect(() => {
+    if (!createRequested) return;
+    setAddingVault(true);
+    onCreateHandled?.();
+    requestAnimationFrame(() => document.getElementById('new-vault-name')?.focus());
+  }, [createRequested, onCreateHandled]);
   const spaces = useQuery({
     queryKey: ['spaces', vaultId],
     enabled: !!vaultId,
@@ -791,31 +845,16 @@ export function VaultLibrary({
     deleteVault.error;
   return (
     <div className="vault-library" data-has-vault={!!vault} data-view={view}>
-      <div className="vault-heading" hidden={view !== 'notes' || local}>
+      <div className="vault-heading" hidden={view !== 'notes' || local || !!vault}>
         <div>
-          <h1>{vault ? 'Your vaults' : 'Create your first vault'}</h1>
+          <h1>Create your first vault</h1>
           <p className="page-description">
-            {vault
-              ? 'Write in Notes, explore connections in Graph, and track your progress in Analytics.'
-              : 'A vault is a collection of notes and files. Start with one for your projects, learning, or everyday ideas.'}
+            A vault is a collection of notes and files. Start with one for your projects, learning,
+            or everyday ideas.
           </p>
         </div>
-        {vault && (
-          <button
-            className="secondary-button"
-            aria-expanded={addingVault}
-            aria-controls="create-vault-form"
-            onClick={() => {
-              setAddingVault(!addingVault);
-              if (!addingVault)
-                requestAnimationFrame(() => document.getElementById('new-vault-name')?.focus());
-            }}
-          >
-            <Plus size={16} />
-            New vault
-          </button>
-        )}
       </div>
+      {vault && !local && <h1 className="sr-only">{vault.name}</h1>}
       <form
         id="create-vault-form"
         className="vault-create-form"
@@ -924,15 +963,7 @@ export function VaultLibrary({
               <select
                 aria-label="Current vault"
                 value={vaultId}
-                onChange={(event) => {
-                  setSelectedVault(event.target.value);
-                  setSelectedSpace('');
-                  setSelectedNote(null);
-                  setGraphRoot(null);
-                  setQuery('');
-                  setSearchDraft('');
-                  setConfirmVaultDelete(false);
-                }}
+                onChange={(event) => openVault(event.target.value)}
               >
                 {vaults.data?.vaults.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -962,8 +993,25 @@ export function VaultLibrary({
                 ))}
               </select>
             </label>
-            <details className="vault-settings">
-              <summary>Vault settings</summary>
+            <CommandPalette
+              notes={index.data?.notes ?? []}
+              openNote={openFromInsights}
+              selected={selectedNote}
+              shortcut={preferences.shortcuts.commands}
+              create={focusNewNote}
+            />
+          </div>
+          {spaces.error && (
+            <p role="alert" className="error-message">
+              {spaces.error.message}
+            </p>
+          )}
+          <div className="vault-tools vault-management" aria-label="Vault tools" role="group">
+            <details className="vault-settings vault-tool">
+              <summary>
+                <Settings2 size={15} aria-hidden="true" />
+                Vault settings
+              </summary>
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -1011,43 +1059,47 @@ export function VaultLibrary({
                 </div>
               )}
             </details>
-            <CommandPalette
-              notes={index.data?.notes ?? []}
-              openNote={openFromInsights}
-              selected={selectedNote}
-              shortcut={preferences.shortcuts.commands}
-              create={focusNewNote}
-            />
+            {spaces.data && (
+              <>
+                <SpacesManager key={vaultId} vaultId={vaultId!} spaces={spaces.data.spaces} />
+                {!local && (
+                  <AuthoringTools
+                    key={`${vaultId}:${selectedSpace}`}
+                    vaultId={vaultId!}
+                    spaceId={selectedSpace}
+                    spaces={spaces.data.spaces}
+                    open={openFromInsights}
+                  />
+                )}
+                <Suspense fallback={null}>
+                  <DeletedNotes
+                    key={`${vaultId}:${selectedSpace}`}
+                    vaultId={vaultId!}
+                    spaceId={selectedSpace}
+                    spaces={spaces.data.spaces}
+                    open={openFromInsights}
+                  />
+                </Suspense>
+              </>
+            )}
+            <span className="vault-tools-divider" aria-hidden="true" />
             <WorkspaceSettings value={preferences} save={setPreferences} />
+            {!local && (
+              <button
+                className="vault-tool-button vault-new"
+                aria-expanded={addingVault}
+                aria-controls="create-vault-form"
+                onClick={() => {
+                  setAddingVault(!addingVault);
+                  if (!addingVault)
+                    requestAnimationFrame(() => document.getElementById('new-vault-name')?.focus());
+                }}
+              >
+                <Plus size={15} aria-hidden="true" />
+                New vault
+              </button>
+            )}
           </div>
-          {spaces.error && (
-            <p role="alert" className="error-message">
-              {spaces.error.message}
-            </p>
-          )}
-          {spaces.data && (
-            <div className="vault-management">
-              <SpacesManager key={vaultId} vaultId={vaultId!} spaces={spaces.data.spaces} />
-              {!local && (
-                <AuthoringTools
-                  key={`${vaultId}:${selectedSpace}`}
-                  vaultId={vaultId!}
-                  spaceId={selectedSpace}
-                  spaces={spaces.data.spaces}
-                  open={openFromInsights}
-                />
-              )}
-              <Suspense fallback={<p>Loading recovery…</p>}>
-                <DeletedNotes
-                  key={`${vaultId}:${selectedSpace}`}
-                  vaultId={vaultId!}
-                  spaceId={selectedSpace}
-                  spaces={spaces.data.spaces}
-                  open={openFromInsights}
-                />
-              </Suspense>
-            </div>
-          )}
           <div className="vault-view-tabs" role="tablist" aria-label="Vault views">
             {(local
               ? (['notes', 'graph', 'analytics'] as const)

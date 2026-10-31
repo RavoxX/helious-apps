@@ -1,17 +1,6 @@
 import { useRef, useState } from 'react';
-import {
-  BookOpen,
-  ChevronDown,
-  LogOut,
-  Monitor,
-  Moon,
-  Settings,
-  Sun,
-  ShieldCheck,
-  PlugZap,
-} from 'lucide-react';
+import { BookOpen, ChevronDown, LogOut, Monitor, Settings } from 'lucide-react';
 import type { User } from './api';
-import { useTheme } from './theme';
 
 export function ProfileMenu({
   user,
@@ -20,15 +9,15 @@ export function ProfileMenu({
   pending,
 }: {
   user: User;
-  navigate: (section: 'settings' | 'sessions' | 'security' | 'agents') => void;
+  navigate: (section: 'settings' | 'sessions') => void;
   signOut: () => void;
   pending: boolean;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
-  const { theme, toggle } = useTheme();
-  function go(section: 'settings' | 'sessions' | 'security' | 'agents') {
+  // Account-only shortcuts; workspace destinations and the theme switch live in the shell.
+  function go(section: 'settings' | 'sessions') {
     panel.current?.hidePopover();
     navigate(section);
     requestAnimationFrame(() =>
@@ -49,7 +38,7 @@ export function ProfileMenu({
         <span className="avatar" aria-hidden="true">
           {user.name.slice(0, 1).toUpperCase()}
         </span>
-        <span>Profile</span>
+        <span className="profile-name">{user.name.split(' ')[0]}</span>
         <ChevronDown size={14} />
       </button>
       <div
@@ -80,18 +69,6 @@ export function ProfileMenu({
           <button onClick={() => go('sessions')}>
             <Monitor size={17} />
             Active sessions
-          </button>
-          <button onClick={() => go('security')}>
-            <ShieldCheck size={17} />
-            Security & access
-          </button>
-          <button onClick={() => go('agents')}>
-            <PlugZap size={17} />
-            AI connections
-          </button>
-          <button onClick={toggle}>
-            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-            {theme === 'dark' ? 'Use light theme' : 'Use dark theme'}
           </button>
           <a href="/docs/editor">
             <BookOpen size={17} />

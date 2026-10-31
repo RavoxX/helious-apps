@@ -6,7 +6,7 @@ test('extensions require consent, preserve drafts and support reading-only appea
 }, info) => {
   test.setTimeout(90000);
   const email = `extension-${info.project.name}-${Date.now()}@example.com`;
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Extension tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('a synthetic extension passphrase');

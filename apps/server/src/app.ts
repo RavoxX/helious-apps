@@ -172,7 +172,13 @@ export async function buildApp(
     const docs = resolve(appsRoot, 'docs/.vitepress/dist');
     app.get('/', async (_request, reply) => reply.redirect('/app/'));
     if (existsSync(web)) {
-      for (const path of ['/verify-email', '/reset-password', '/forgot-password'])
+      for (const path of [
+        '/login',
+        '/register',
+        '/verify-email',
+        '/reset-password',
+        '/forgot-password',
+      ])
         app.get(path, async (_request, reply) =>
           reply
             .header('Referrer-Policy', 'no-referrer')

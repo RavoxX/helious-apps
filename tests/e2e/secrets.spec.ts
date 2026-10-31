@@ -12,7 +12,7 @@ test('authenticator setup, encrypted secrets, reveal expiry, audit and MFA login
     value = 'synthetic-browser-secret-DO-NOT-USE';
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Secret keeper');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
@@ -38,7 +38,7 @@ test('authenticator setup, encrypted secrets, reveal expiry, audit and MFA login
   const codes = (await page.locator('.recovery-codes pre').innerText()).split('\n');
   expect(codes).toHaveLength(10);
   await page.getByRole('button', { name: 'I saved my recovery codes' }).click();
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByRole('tab', { name: 'Secrets', exact: true }).click();
   await page.getByRole('button', { name: 'Add secret', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Add a secret', exact: true });
@@ -63,8 +63,14 @@ test('authenticator setup, encrypted secrets, reveal expiry, audit and MFA login
   await expect(page.getByLabel('Revealed secret')).not.toBeVisible();
   await page.screenshot({ path: info.outputPath('secrets-metadata.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole('button', { name: 'Profile for Secret keeper' }).click();
-  await page.getByRole('button', { name: 'Security & access', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Workspace' })
+    .getByRole('link', { name: /^Settings/ })
+    .click();
+  await page
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('link', { name: /^Security & access/ })
+    .click();
   await expect(page.getByRole('heading', { name: 'Secret audit log' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'secret.read', exact: false }).first()).toBeVisible();
   await page.screenshot({ path: info.outputPath('security-audit.png'), fullPage: true });
@@ -76,9 +82,7 @@ test('authenticator setup, encrypted secrets, reveal expiry, audit and MFA login
     .getByRole('dialog', { name: 'Account menu' })
     .getByRole('button', { name: 'Sign out', exact: true })
     .click();
-  await expect(
-    page.getByRole('button', { name: 'Create your account', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true }).last()).toBeVisible();
   await page.goto('/app/?mode=login');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);

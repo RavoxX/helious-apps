@@ -137,8 +137,7 @@ svg {
   color: var(--color-muted);
 }
 .intro-line > span,
-.milestone > span,
-.instance-label > span {
+.milestone > span {
   width: 5px;
   height: 5px;
   background: var(--light-blue);
@@ -366,84 +365,22 @@ input::placeholder {
 .dashboard {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-}
-.app-sidebar {
-  padding: 28px 20px;
-  display: flex;
-  flex-direction: column;
-  background: oklch(0.18 0 0);
-  border-right: 1px solid var(--line);
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-}
-.app-sidebar .brand {
-  margin-bottom: 35px;
-}
-.instance-label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 10px;
-  color: var(--color-muted);
-  padding-inline: 8px;
-  margin-bottom: 25px;
-}
-.app-sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.app-sidebar nav button,
-.sidebar-bottom button,
-.sidebar-bottom a {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 11px;
-  background: none;
-  border: 0;
-  color: var(--color-muted);
-  font-size: 11px;
-  text-align: left;
-  border-radius: 5px;
-}
-.app-sidebar nav .selected {
-  background: oklch(0.26 0.015 250);
-  color: var(--light-blue);
-}
-.app-sidebar nav button:hover,
-.sidebar-bottom button:hover {
-  background: oklch(0.23 0 0);
-}
-.sidebar-bottom {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.sidebar-bottom > span {
-  font-size: 10px;
-  color: var(--color-muted);
-  overflow-wrap: anywhere;
-  border-top: 1px solid var(--line);
-  padding: 18px 10px 0;
-  margin-top: 10px;
+  grid-template-columns: 248px minmax(0, 1fr);
 }
 .dashboard-top {
-  height: 79px;
+  height: 64px;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
+  gap: 12px;
+  padding: 0 32px;
 }
 .dashboard-top > .workspace-breadcrumb {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  font-size: 11px;
+  margin-right: auto;
+  font-size: 13px;
   color: var(--color-muted);
 }
 .avatar {
@@ -458,62 +395,18 @@ input::placeholder {
 }
 .dashboard-content {
   max-width: 1060px;
-  padding: 65px 55px;
+  padding: 48px;
   margin: auto;
 }
 .dashboard-content h1 {
-  font-size: 42px;
-  font-weight: 500;
-  line-height: 1.28;
+  font-size: 36px;
+  font-weight: 550;
+  line-height: 1.25;
 }
 .page-description {
   font-size: 13px;
   color: var(--color-muted);
   margin-top: 20px;
-}
-.welcome-panel {
-  display: flex;
-  gap: 20px;
-  padding: 27px;
-  background: oklch(0.205 0.008 250);
-  border: 1px solid oklch(0.32 0.02 250);
-  border-radius: 8px;
-  margin-top: 35px;
-}
-.welcome-panel > svg {
-  color: var(--light-blue);
-}
-.welcome-panel h2 {
-  font-size: 16px;
-  font-weight: 550;
-}
-.welcome-panel p {
-  font-size: 11px;
-  color: var(--color-muted);
-  margin-top: 10px;
-  max-width: 65ch;
-}
-.next-phase {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 50px;
-  margin-top: 65px;
-  padding-bottom: 40px;
-  border-bottom: 1px solid var(--line);
-}
-.next-phase > div > svg {
-  color: var(--light-blue);
-  margin-bottom: 20px;
-}
-.next-phase h2 {
-  font-size: 23px;
-  font-weight: 500;
-}
-.next-phase p {
-  font-size: 12px;
-  color: var(--color-muted);
-  margin-top: 15px;
-  max-width: 45ch;
 }
 .secondary-button {
   display: inline-flex;
@@ -528,53 +421,6 @@ input::placeholder {
   color: var(--color-ink);
   font-size: 11px;
   margin-top: 23px;
-}
-.roadmap-mini {
-  align-self: center;
-}
-.roadmap-mini p {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 11px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
-  margin: 0;
-}
-.roadmap-mini p:first-child {
-  color: var(--color-ink);
-}
-.roadmap-mini svg {
-  color: var(--light-blue);
-}
-.roadmap-mini small {
-  font-size: 9px;
-  margin-left: auto;
-  color: var(--color-muted);
-}
-.step-dot {
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--color-muted);
-  border-radius: 50%;
-  margin-inline: 4px;
-}
-.dashboard-links {
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-  margin-top: 30px;
-}
-.dashboard-links > a,
-.dashboard-links > button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 11px;
-  color: var(--color-muted);
-  background: none;
-  border: 0;
-  padding: 7px 0;
 }
 .session-list {
   margin-top: 35px;
@@ -591,16 +437,16 @@ input::placeholder {
   flex: 1;
 }
 .session-row strong {
-  font-size: 13px;
+  font-size: 14px;
 }
 .user-agent {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--color-muted);
   margin: 6px 0;
   overflow-wrap: anywhere;
 }
 .session-row small {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--color-muted);
 }
 .current-session {
@@ -608,7 +454,7 @@ input::placeholder {
   gap: 5px;
   align-items: center;
   color: var(--light-blue);
-  font-size: 10px;
+  font-size: 12px;
 }
 .danger-button {
   display: flex;
@@ -666,16 +512,13 @@ input::placeholder {
     padding: 35px;
   }
   .dashboard-content {
-    padding: 50px 30px;
+    padding: 40px 30px;
   }
   .dashboard {
-    grid-template-columns: 210px 1fr;
-  }
-  .next-phase {
-    gap: 30px;
+    grid-template-columns: 220px 1fr;
   }
   .dashboard-content h1 {
-    font-size: 36px;
+    font-size: 32px;
   }
 }
 @media (max-width: 760px) {
@@ -714,94 +557,24 @@ input::placeholder {
   }
   .dashboard {
     display: block;
-    padding-bottom: 80px;
-  }
-  .app-sidebar {
-    height: auto;
-    position: static;
-    border-right: 0;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--line);
-  }
-  .app-sidebar .brand {
-    margin: 0;
-    font-size: 25px;
-  }
-  .instance-label {
-    display: none;
-  }
-  .app-sidebar nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 5;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    padding: 10px;
-    background: var(--color-panel);
-    border-top: 1px solid var(--line);
-  }
-  .app-sidebar nav button {
-    flex: 1;
-    flex-direction: column;
-    gap: 5px;
-    font-size: 9px;
-    padding: 8px 16px;
-    min-width: 0;
-  }
-  .sidebar-bottom {
-    position: absolute;
-    right: 18px;
-    top: 20px;
-  }
-  .sidebar-bottom > a,
-  .sidebar-bottom > span {
-    display: none;
-  }
-  .sidebar-bottom button {
-    padding: 8px;
-    font-size: 10px;
+    padding-bottom: 84px;
   }
   .dashboard-top {
-    height: 60px;
-    padding-inline: 23px;
+    height: 56px;
+    padding-inline: 20px;
   }
   .dashboard-top > .workspace-breadcrumb {
-    font-size: 10px;
+    font-size: 12px;
   }
   .dashboard-content {
-    padding: 35px 23px;
+    padding: 28px 20px;
   }
   .dashboard-content h1 {
-    font-size: 32px;
+    font-size: 28px;
   }
   .page-description {
-    font-size: 12px;
-    line-height: 1.9;
-  }
-  .welcome-panel {
-    padding: 20px;
-    gap: 14px;
-  }
-  .welcome-panel p {
-    font-size: 11px;
-  }
-  .next-phase {
-    grid-template-columns: 1fr;
-    gap: 35px;
-    margin-top: 45px;
-  }
-  .next-phase h2 {
-    font-size: 23px;
-  }
-  .roadmap-mini {
-    width: 100%;
-  }
-  .dashboard-links {
-    gap: 18px;
-    flex-direction: column;
+    font-size: 13px;
+    line-height: 1.7;
   }
   .session-row {
     gap: 12px;
@@ -812,12 +585,6 @@ input::placeholder {
   }
   .session-row .current-session {
     margin-left: 30px;
-  }
-  .session-row small {
-    font-size: 9px;
-  }
-  .current-session {
-    font-size: 9px;
   }
   .registration-setting > span {
     display: block;
@@ -864,17 +631,6 @@ input::placeholder {
   top: 29px;
   right: 30px;
 }
-.dashboard-top > .app-theme-toggle {
-  order: 2;
-  margin-left: auto;
-  margin-right: 15px;
-}
-.dashboard-top > .avatar {
-  order: 3;
-}
-.profile-control {
-  order: 3;
-}
 .profile-trigger {
   display: flex;
   align-items: center;
@@ -894,7 +650,7 @@ input::placeholder {
 }
 .profile-menu {
   position: fixed;
-  inset: 68px 24px auto auto;
+  inset: 56px 24px auto auto;
   margin: 0;
   width: min(290px, calc(100vw - 32px));
   padding: 8px;
@@ -981,7 +737,7 @@ input::placeholder {
 }
 @media (max-width: 760px) {
   .profile-menu {
-    top: 121px;
+    top: 116px;
     right: 16px;
     max-height: calc(100dvh - 145px);
     overflow: auto;
@@ -1005,20 +761,6 @@ input::placeholder {
 [data-theme='light'] .intro-note {
   background: oklch(0.95 0.025 230);
 }
-[data-theme='light'] .app-sidebar {
-  background: var(--color-panel);
-}
-[data-theme='light'] .app-sidebar nav .selected {
-  background: oklch(0.93 0.035 240);
-}
-[data-theme='light'] .app-sidebar nav button:hover,
-[data-theme='light'] .sidebar-bottom button:hover {
-  background: oklch(0.94 0.01 250);
-}
-[data-theme='light'] .welcome-panel {
-  background: oklch(0.97 0.015 240);
-  border-color: oklch(0.88 0.025 240);
-}
 [data-theme='light'] .secondary-button {
   border-color: oklch(0.8 0.015 250);
 }
@@ -1036,16 +778,15 @@ input::placeholder {
   .dashboard-main :is(a, button, input, select, textarea) {
     scroll-margin-block: 100px;
   }
-  .app-sidebar nav button.overview-nav {
-    display: none;
-  }
   .auth-main > .app-theme-toggle {
     top: 14px;
     right: 21px;
   }
   .dashboard-top > .app-theme-toggle {
-    width: 29px;
-    height: 29px;
-    margin-right: 10px;
+    width: 32px;
+    height: 32px;
+  }
+  .profile-name {
+    display: none;
   }
 }

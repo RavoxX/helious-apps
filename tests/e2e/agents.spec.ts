@@ -11,16 +11,15 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
     password = 'a private agent browser passphrase',
     errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Connected developer');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, password);
-  await page.getByRole('button', { name: 'Profile for Connected developer' }).click();
   await page
-    .getByRole('dialog', { name: 'Account menu' })
-    .getByRole('button', { name: 'AI connections', exact: true })
+    .getByRole('navigation', { name: 'Workspace' })
+    .getByRole('link', { name: 'AI connections', exact: true })
     .click();
   await expect(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
   await page.getByRole('button', { name: 'Create agent token', exact: true }).click();
@@ -132,10 +131,9 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
   });
   expect(exchange.status()).toBe(200);
   await page.goto('http://localhost:3100/app/');
-  await page.getByRole('button', { name: 'Profile for Connected developer' }).click();
   await page
-    .getByRole('dialog', { name: 'Account menu' })
-    .getByRole('button', { name: 'AI connections', exact: true })
+    .getByRole('navigation', { name: 'Workspace' })
+    .getByRole('link', { name: 'AI connections', exact: true })
     .click();
   const connection = page
     .locator('.connection-row')

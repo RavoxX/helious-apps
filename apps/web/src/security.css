@@ -300,7 +300,4 @@
   .secret-row {
     align-items: flex-start;
   }
-  .app-sidebar nav button.overview-nav {
-    display: none;
-  }
 }

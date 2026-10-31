@@ -5,13 +5,13 @@ test('vaults, Markdown edits, search, backlinks and attachments survive reload',
   page,
 }, info) => {
   const email = `notes-${info.project.name}-${Date.now()}@example.com`;
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Knowledge tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('a private knowledge passphrase');
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, 'a private knowledge passphrase');
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByLabel('New vault name').fill('My projects');
   await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await expect(page.getByLabel('Current vault')).toContainText('My projects');
@@ -49,7 +49,7 @@ test('vaults, Markdown edits, search, backlinks and attachments survive reload',
   });
   await expect(page.getByRole('link', { name: 'diagram.txt', exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await expect(page.locator('.note-list .note-file')).toHaveCount(2);
   await page
     .locator('.note-list')

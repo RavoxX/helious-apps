@@ -16,7 +16,7 @@ test('rich reading renders math, callouts, scoped embeds and passive media witho
     if (request.method() === 'GET') reads.push(url);
   });
   const email = `reading-${info.project.name}-${Date.now()}@example.com`;
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Reading tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('a synthetic reading passphrase');

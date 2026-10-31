@@ -224,8 +224,8 @@ export function SecretsPanel({
         <p>Showing the first 100 secrets. Choose a Space to narrow the list.</p>
       )}
       <p className="security-footnote">
-        Create scoped tokens in Profile → AI connections. A Space policy alone never grants access
-        to a secret. <a href="/docs/secrets">Read the security guide</a>
+        Create scoped tokens under AI connections in the sidebar. A Space policy alone never grants
+        access to a secret. <a href="/docs/secrets">Read the security guide</a>
       </p>
       {error && (
         <p className="error-message" role="alert">

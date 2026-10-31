@@ -4,13 +4,19 @@ The Phase 3 workspace is available in **Vaults**: CodeMirror 6, a folder explore
 
 ## Finding your way around
 
-Signing in opens **Vaults**. A vault is a collection of notes and attachments: give your first vault a name and choose **Create vault**, then **Create your first note**. Once a vault exists, **New vault** opens the form for another collection without interrupting the notebook with a permanent creation form.
+Signing in opens **Vaults**, or returns you to a workspace address you opened while signed out. The left sidebar is the map of your workspace:
 
-Use **Notes** to write, **Graph** to explore connections, and **Analytics** to see writing activity and statistics for the selected vault. The **Current vault** selector changes collections. **Explorer** opens the note list; from an insights view it returns to Notes. **Vault settings** renames or deletes the selected vault, while **Hotkeys** customizes editor shortcuts.
+- **Home** (`/app/home`) shows what needs attention (pending secret requests, low recovery codes), your vaults, AI connections, two-step verification and signed-in sessions, plus a short setup checklist until it is complete.
+- **AI connections** (`/app/ai-connections`) manages agent tokens and OAuth tools.
+- **Vaults** lists every vault. Choose one to open it at `/app/vaults/<id>`; **+** (Add a vault) opens the create form.
+- **Settings** (`/app/settings`) groups **Account**, **Security & access** (`/app/settings/security`) and **Sessions** (`/app/settings/sessions`) as tabs. A badge shows pending approvals.
+- **Help & docs** opens this guide, and **Collapse** shrinks the sidebar to icons. Your choice is remembered in this browser.
 
-**Canvas** opens portable boards with cards and connections. **Daily notes & templates** creates structured Markdown, and **Properties** edits typed YAML inside a note. See [authoring tools](./authoring) and [Canvas](./canvas) for storage, draft and compatibility limits.
+Every page has its own address, so the browser's back and forward buttons, bookmarks and "open in new tab" work. Signing in happens at `/login` (create an account at `/register` when registration is open). If you open a workspace address while signed out, you return to it after signing in. Older `/app/?mode=login` links still work. Phones show Home, Vaults, AI connections and Settings in a bottom tab bar.
 
-The **Profile** button in the top right opens your account menu: account settings, active sessions, light/dark appearance, the workspace guide, and sign out. It supports Tab/Enter, Escape and click-outside dismissal, including on phones. **Account settings** manages your verified email and appearance; the password reset link sends an email through the existing recovery flow. Account settings and vault settings apply to different things.
+Inside a vault, the top row holds **Explorer** (the note list), the **Current vault** and **Space** selectors and **Commands** (Ctrl/⌘+P). Below it, one row of tools opens panels in place: **Vault settings** (rename or delete), **Spaces & permissions**, **Daily notes & templates**, **Deleted notes**, **Hotkeys**, **Reading appearance** and **New vault**. Only one panel is open at a time; Escape from inside the panel closes it and returns focus to its button. Use **Notes** to write, **Graph** to explore connections, **Analytics** for writing activity and **Canvas** for boards with cards and connections. **Properties** edits typed YAML inside a note. See [authoring tools](./authoring) and [Canvas](./canvas) for storage, draft and compatibility limits.
+
+The profile button in the top right (your first name) opens the account menu: account settings, active sessions, the workspace guide and sign out. It supports Tab/Enter, Escape and click-outside dismissal, including on phones. The moon/sun button beside it switches light and dark appearance. **Account settings** manages your verified email and appearance; the password reset link sends an email through the existing recovery flow. Account settings and vault settings apply to different things.
 
 ## Writing and reading
 
@@ -72,4 +78,4 @@ Choose **Graph** or **Analytics** beside Notes to inspect the current vault. **V
 
 ## Spaces and recovery
 
-The **Space** selector filters notes, attachments, graph and analytics. New content uses that space, or Personal when viewing All spaces. Change **Note space** in the editor and save to reassign a note. **Spaces & permissions** manages custom spaces and agent policy eligibility; actual MCP connections are configured in Profile → AI connections. **Version history** reviews saved snapshots, and **Deleted notes** recovers soft-deleted content. See [Spaces](./spaces) and [History](./history) for exact permission and retention rules.
+The **Space** selector filters notes, attachments, graph and analytics. New content uses that space, or Personal when viewing All spaces. Change **Note space** in the editor and save to reassign a note. **Spaces & permissions** manages custom spaces and agent policy eligibility; actual MCP connections are configured under AI connections in the sidebar. **Version history** reviews saved snapshots, and **Deleted notes** recovers soft-deleted content. See [Spaces](./spaces) and [History](./history) for exact permission and retention rules.

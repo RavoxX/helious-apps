@@ -1,6 +1,6 @@
 # Get started
 
-After signing in, use **Profile → Security & access** to enroll an authenticator and save recovery codes before adding credentials in a vault's **Secrets** tab. See [encrypted secrets and key rotation](./secrets). MFA is optional for ordinary notes and required for secrets.
+After signing in, open **Settings → Security & access** (`/app/settings/security`) to enroll an authenticator and save recovery codes before adding credentials in a vault's **Secrets** tab. See [encrypted secrets and key rotation](./secrets). MFA is optional for ordinary notes and required for secrets.
 
 ## Docker installation
 
@@ -59,7 +59,7 @@ This starts a real, ephemeral MongoDB test process and serves the built site on 
 
 ## AI connections
 
-After creating a vault, open **Profile → AI connections**. Create a scoped local-agent token or connect a remote tool through OAuth. Use the project memory form to create the Code Space conventions without replacing existing notes. See [MCP setup and tool reference](./mcp). The real desktop workspace now follows the homepage preview's left explorer, central note and right connections layout; mobile keeps accessible drawers and stacked panels.
+After creating a vault, open **AI connections** in the workspace sidebar. Create a scoped local-agent token or connect a remote tool through OAuth. Use the project memory form to create the Code Space conventions without replacing existing notes. See [MCP setup and tool reference](./mcp). The real desktop workspace now follows the homepage preview's left explorer, central note and right connections layout; mobile keeps accessible drawers and stacked panels.
 
 For local Vite development, the API/MCP server must use the same canonical public origin. The built port-3000 preview serves all routes together. A remote MCP client requires a reachable HTTPS deployment, rather than a development proxy.
 

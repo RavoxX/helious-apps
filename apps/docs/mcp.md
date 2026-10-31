@@ -2,7 +2,7 @@
 
 Helious implements authenticated MCP at `/mcp` using the official TypeScript SDK v1, with a local stdio bridge named `helious-mcp`. It supports the 2025 MCP handshake and stateless Streamable HTTP with JSON responses. Each request authenticates independently; no server-side MCP session ID is needed. Legacy SSE and the newer v2-only envelope protocol are not exposed.
 
-Open **Profile → AI connections** to create/revoke tokens, create a Code Space project template, inspect recent activity and copy configuration examples. Never put a raw token into a note or committed configuration file. Managed Helious Cloud is still a deployment plan; the same server can run on your infrastructure today.
+Open **AI connections** in the workspace sidebar to create/revoke tokens, create a Code Space project template, inspect recent activity and copy configuration examples. Never put a raw token into a note or committed configuration file. Managed Cloud availability and registration are controlled by its operator; the same server can run on your infrastructure.
 
 ## Choose what an agent can access
 

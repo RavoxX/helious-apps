@@ -288,8 +288,8 @@ export function SecurityPanel() {
           <div>
             <h2 id="approvals-title">Agent approval inbox</h2>
             <p>
-              Requests expire after 10 minutes and can be redeemed once. Manage agents in Profile →
-              AI connections.
+              Requests expire after 10 minutes and can be redeemed once. Manage agents under AI
+              connections in the sidebar.
             </p>
           </div>
         </div>

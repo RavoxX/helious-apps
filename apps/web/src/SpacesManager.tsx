@@ -168,7 +168,7 @@ export function SpacesManager({ vaultId, spaces }: { vaultId: string; spaces: Sp
       <p>
         Spaces organize what you keep private and what agents may access. A policy is a ceiling, not
         a grant: each agent token must also name the vault, space and allowed actions. Manage
-        connections in Profile → AI connections.
+        connections under AI connections in the sidebar.
       </p>
       {spaces.map((space) => (
         <SpaceRow key={space.id} vaultId={vaultId} space={space} />

@@ -11,7 +11,7 @@ Every new vault contains two built-in spaces:
 | Personal | No agent access                             | Journals, personal knowledge and anything you have not chosen to share |
 | Code     | Read/write eligibility with explicit grants | Project context you choose to make available to coding agents          |
 
-Neither space grants access to an agent by itself. Agent authentication, token creation and MCP connections are available in Profile → AI connections. Tokens require explicit vault, Space and action grants. Selecting Personal additionally requires confirmation and a permitting Space policy. The server intersects token grants with current policies on every operation.
+Neither space grants access to an agent by itself. Agent authentication, token creation and MCP connections are available under AI connections in the sidebar. Tokens require explicit vault, Space and action grants. Selecting Personal additionally requires confirmation and a permitting Space policy. The server intersects token grants with current policies on every operation.
 
 Your signed-in account can read and write all of its own spaces. Another account, including an instance administrator, cannot access your vaults through the API. Spaces do not currently provide multi-user collaboration.
 

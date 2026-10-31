@@ -6,13 +6,13 @@ test('CodeMirror, reading views, retained tab drafts and quick switcher work', a
 }, info) => {
   const email = `editor-${info.project.name}-${Date.now()}@example.com`;
   const password = 'a private editor testing phrase';
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Writer');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your account' }).click();
   await verifyAndSignIn(page, email, password);
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByLabel('New vault name').fill('My notebook');
   await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await expect(page.getByLabel('Current vault')).toContainText('My notebook');
@@ -66,7 +66,7 @@ test('CodeMirror, reading views, retained tab drafts and quick switcher work', a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('workspace.png'), fullPage: true });
   await page.reload();
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await expect(page.getByRole('tab', { name: 'A.md', exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'B.md', exact: true })).toHaveAttribute(
     'aria-selected',

@@ -6,7 +6,7 @@ test('verification blocks login, expired links recover, and fresh links allow si
 }, info) => {
   const email = `verify-${info.project.name}-${Date.now()}@example.com`;
   const password = 'a private email testing phrase';
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Email tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
@@ -44,7 +44,7 @@ test('password reset has neutral responses, checks strength and invalidates ever
   const email = `reset-${info.project.name}-${Date.now()}@example.com`;
   const password = 'a private email testing phrase';
   const next = 'a different long testing phrase';
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Reset tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);

@@ -47,7 +47,7 @@ export function EmailFlow() {
     !/^(?:password|123456|qwerty)/i.test(password);
   const verify = useMutation({
     mutationFn: () => api('/auth/verify-email', 'POST', { token }),
-    onSuccess: () => window.location.replace('/app/?mode=login&verified=1'),
+    onSuccess: () => window.location.replace('/login?verified=1'),
   });
   const request = useMutation({
     mutationFn: () =>
@@ -220,7 +220,7 @@ export function EmailFlow() {
             <div role="status">
               <p>{reset.data.message}</p>
               {reset.data.warning && <p role="alert">{reset.data.warning}</p>}
-              <a href="/app/?mode=login&reset=1" className="primary-button">
+              <a href="/login?reset=1" className="primary-button">
                 Back to sign in <ArrowRight size={15} />
               </a>
             </div>
@@ -230,7 +230,7 @@ export function EmailFlow() {
               {reset.error.message}
             </p>
           )}
-          <a className="back-link" href="/app/?mode=login">
+          <a className="back-link" href="/login">
             <ArrowLeft size={13} />
             Back to sign in
           </a>

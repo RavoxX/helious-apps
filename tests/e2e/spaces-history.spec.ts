@@ -11,7 +11,7 @@ test('spaces, explicit Personal policies, revision diffs and deleted-note recove
   const password = 'a private spaces testing passphrase';
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Connected writer');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);

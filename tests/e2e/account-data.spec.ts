@@ -28,7 +28,7 @@ test('adult declaration, profile correction, private export and account deletion
       },
     });
   });
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Data tester');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);

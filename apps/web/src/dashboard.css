@@ -1,84 +1,15 @@
 @media (min-width: 1280px) {
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) {
-    grid-template-columns: 68px minmax(0, 1fr);
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .app-sidebar {
-    padding: 22px 10px;
-    background: var(--color-panel);
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .app-sidebar .brand {
-    font-size: 0;
-    gap: 0;
-    margin: 0 auto 34px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .app-sidebar .brand img {
-    width: 30px;
-    height: 30px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .app-sidebar .instance-label,
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .sidebar-bottom > span {
-    display: none;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .app-sidebar nav button,
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .sidebar-bottom :is(a, button) {
-    font-size: 0;
-    justify-content: center;
-    gap: 0;
-    padding: 14px;
-    min-height: 46px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true'])
-    .sidebar-bottom
-    > a
-    svg:last-child {
-    display: none;
-  }
   .workspace-dashboard:has(.vault-library[data-has-vault='true']) .dashboard-content {
     padding: 16px 24px 32px;
     max-width: none;
   }
   .workspace-dashboard:has(.vault-library[data-has-vault='true']) .dashboard-top {
-    height: 60px;
+    height: 56px;
     padding-inline: 26px;
     background: var(--color-panel);
   }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-heading {
-    justify-content: flex-end;
-    margin: 0 0 10px;
-    position: absolute;
-    top: 20px;
-    right: 0;
-  }
   .workspace-dashboard .vault-library[data-has-vault='true'] {
     position: relative;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-create-form:not([hidden]) {
-    margin-right: 130px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-heading > div {
-    display: none;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-heading .secondary-button {
-    margin: 0;
-    padding: 7px 12px;
-    min-height: 32px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-toolbar {
-    margin-block: 0 12px;
-    gap: 16px;
-    justify-content: flex-start;
-    padding-right: 125px;
-    align-items: flex-end;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-settings {
-    margin-left: auto;
-    align-self: center;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-toolbar label {
-    font-size: 10px;
-  }
-  .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-toolbar select {
-    padding-block: 8px;
   }
   .workspace-dashboard:has(.vault-library[data-has-vault='true']) .vault-layout {
     border-radius: 0 0 10px 10px;
@@ -227,9 +158,4 @@
 .local-connections-preview span {
   font-size: 10px;
   line-height: 1.8;
-}
-@media (max-width: 760px) {
-  .app-sidebar nav button.agents-nav {
-    display: none;
-  }
 }

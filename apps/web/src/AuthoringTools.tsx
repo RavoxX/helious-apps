@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   dailyNotePath,
@@ -125,7 +126,10 @@ export function AuthoringTools({
   });
   return (
     <details className="authoring-tools">
-      <summary>Daily notes &amp; templates</summary>
+      <summary>
+        <CalendarDays size={15} aria-hidden="true" />
+        Daily notes &amp; templates
+      </summary>
       <p>
         Save new notes in <strong>{destination?.name ?? 'a selected Space'}</strong>. Existing notes
         stay in their original Space.

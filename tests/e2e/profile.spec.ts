@@ -8,7 +8,7 @@ test('profile shortcuts and first-vault guidance work with keyboard, themes and 
   await page.setExtraHTTPHeaders({ 'X-Forwarded-For': isMobile ? '192.0.2.92' : '192.0.2.91' });
   const email = `profile-${info.project.name}-${Date.now()}@example.com`;
   const password = 'a private profile testing passphrase';
-  await page.goto('/app/');
+  await page.goto('/register');
   await page.getByLabel('Your name').fill('Alex Writer');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
@@ -45,13 +45,12 @@ test('profile shortcuts and first-vault guidance work with keyboard, themes and 
     page.getByRole('button', { name: wasDark ? 'Switch to dark mode' : 'Switch to light mode' }),
   ).toBeVisible();
   await trigger.click();
-  await expect(
-    menu.getByRole('button', { name: wasDark ? 'Use dark theme' : 'Use light theme', exact: true }),
-  ).toBeVisible();
+  // The menu holds account shortcuts only; workspace destinations stay in the sidebar.
+  await expect(menu.getByRole('button', { name: 'AI connections' })).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('profile-menu.png'), fullPage: true });
   await menu.getByRole('button', { name: 'Active sessions', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your active sessions' })).toBeFocused();
-  await page.getByRole('button', { name: 'Vaults', exact: true }).click();
+  await page.getByRole('link', { name: 'Vaults', exact: true }).click();
   await page.getByLabel('New vault name').fill('My knowledge');
   await page.getByRole('button', { name: 'Create vault', exact: true }).click();
   await expect(page.getByLabel('Current vault')).toContainText('My knowledge');
@@ -63,10 +62,40 @@ test('profile shortcuts and first-vault guidance work with keyboard, themes and 
   await expect(page.getByLabel('New vault name')).toBeFocused();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByLabel('New vault name')).not.toBeVisible();
+  const nav = page.getByRole('navigation', { name: 'Workspace' });
+  await nav.getByRole('link', { name: 'Home', exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/home$/);
+  await expect(nav.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(page.getByRole('heading', { name: 'Welcome back, Alex' })).toBeVisible();
+  const setup = page.getByRole('region', { name: 'Finish setting up' });
+  await expect(setup).toContainText('1 of 3 done');
+  await expect(setup.getByRole('button', { name: /Set up/ })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('overview.png'), fullPage: true });
+  await page
+    .getByRole('region', { name: 'Your vaults' })
+    .getByRole('button', { name: 'My knowledge' })
+    .click();
+  await expect(page.getByLabel('Current vault')).toContainText('My knowledge');
+  await expect(page).toHaveURL(/\/app\/vaults\/[\w-]+$/);
+  if (!isMobile) {
+    const sidebar = page.getByRole('navigation', { name: 'Workspace' });
+    await expect(sidebar.getByRole('link', { name: 'My knowledge' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    // Collapsing is the reader's choice and survives a reload.
+    await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+    await expect(page.locator('.dashboard')).toHaveClass(/sidebar-collapsed/);
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Expand sidebar', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
+    await expect(page.locator('.dashboard')).not.toHaveClass(/sidebar-collapsed/);
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await trigger.click();
   await menu.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Create your account', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true }).last()).toBeVisible();
 });

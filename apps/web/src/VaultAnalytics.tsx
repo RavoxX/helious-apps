@@ -336,7 +336,7 @@ export function VaultAnalytics({
         ) : (
           <p>
             {data.agentActivityAvailable
-              ? 'No agent activity in this view yet. Manage connections from Profile → AI connections.'
+              ? 'No agent activity in this view yet. Manage connections from AI connections in the sidebar.'
               : 'Agent activity is recorded by a connected server. Local folder changes appear in the activity chart above.'}
           </p>
         )}

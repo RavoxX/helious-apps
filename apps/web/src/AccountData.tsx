@@ -162,7 +162,7 @@ export function AccountData({ user }: { user: User }) {
                 await api('/account/delete', 'POST', { ...credentials(), confirmation });
                 discardAllDrafts();
                 client.clear();
-                window.location.replace('/app/?mode=login&deleted=1');
+                window.location.replace('/login?deleted=1');
               })
             }
           >
