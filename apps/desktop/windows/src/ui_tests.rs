@@ -96,6 +96,22 @@ fn native_daily_properties_and_canvas_controls_save_guarded_files() {
             .contains("Native canvas card")
     );
 }
+fn reading_ready(harness: &mut Harness<'_, HeliousApp>) {
+    for _ in 0..500 {
+        harness.step();
+        if harness.state().reading.loaded
+            && harness.state().pending.is_none()
+            && harness.state().queued.is_empty()
+        {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    panic!(
+        "Native reading preview did not load: {}",
+        harness.state().error
+    );
+}
 fn settle(harness: &mut Harness<'_, HeliousApp>) {
     for _ in 0..150 {
         harness.step();
@@ -217,6 +233,7 @@ fn native_navigation_settings_and_local_save_are_functional() {
         std::thread::sleep(Duration::from_millis(400));
         harness.step();
         settle(&mut harness);
+        reading_ready(&mut harness);
         harness
             .render()
             .unwrap()
@@ -224,6 +241,7 @@ fn native_navigation_settings_and_local_save_are_functional() {
             .unwrap();
         harness.state_mut().theme = "dark".into();
         harness.step();
+        reading_ready(&mut harness);
         harness
             .render()
             .unwrap()
@@ -243,6 +261,10 @@ fn native_navigation_settings_and_local_save_are_functional() {
     harness.get_by_label("+").click();
     settle(&mut harness);
     assert!(vault.path().join("Created.md").is_file());
+    if harness.state().mode != 0 {
+        reading_ready(&mut harness);
+        settle(&mut harness);
+    }
     harness.get_by_label("Delete note").click();
     harness.step();
     harness.step();

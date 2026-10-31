@@ -9,13 +9,14 @@ struct ReadBlock: Decodable {var kind: String; var text: String; var spans: [Rea
 struct ReadAsset {var kind: String; var path: String; var id: String; var blocks: [ReadBlock]; var data: Data?; var pixelBytes: Int}
 @MainActor final class NativeReaderModel: ObservableObject {
     @Published var blocks: [ReadBlock] = []
+    @Published var loaded = false
     @Published var assets: [String: ReadAsset] = [:]
     @Published var errors: [String: String] = [:]
     @Published var loading: Set<String> = []
     var key = ""
     func load(_ source: String, key: String, dark: Bool, bridge: NativeBridge) async {
-        self.key = key; blocks = []; assets = [:]; errors = [:]; loading = []
-        do {try await Task.sleep(for: .milliseconds(350)); let result = try await bridge.call(["operation": "reading_document", "markdown": source, "dark": dark]); guard self.key == key, !Task.isCancelled else {return}; blocks = try decode(result["blocks"] ?? [], as: [ReadBlock].self)} catch {if self.key == key, !Task.isCancelled {errors["document"] = error.localizedDescription}}
+        self.key = key; loaded = false; blocks = []; assets = [:]; errors = [:]; loading = []
+        do {try await Task.sleep(for: .milliseconds(350)); let result = try await bridge.call(["operation": "reading_document", "markdown": source, "dark": dark]); guard self.key == key, !Task.isCancelled else {return}; blocks = try decode(result["blocks"] ?? [], as: [ReadBlock].self); loaded = true} catch {if self.key == key, !Task.isCancelled {errors["document"] = error.localizedDescription}}
     }
     func request(_ request: [String: Any], key: String, store: WorkspaceStore) {
         guard !loading.contains(key) else {return}; let documentKey = self.key; loading.insert(key)
@@ -46,6 +47,7 @@ struct NativeReadingView: View {
     var body: some View {
         ScrollView {VStack(alignment: .leading, spacing: 14) {
             HStack {Text("Reading · local renderers").font(.caption).foregroundStyle(.secondary); Spacer(); Button("Clear attachment previews") {model.assets = [:]; model.errors = [:]}}
+            if model.loaded && model.blocks.isEmpty {Text("This note is empty. Switch to Source to start writing.").foregroundStyle(.secondary)}
             if let error = model.errors["document"] {Text(error).foregroundStyle(.orange)}
             ForEach(Array(model.blocks.enumerated()), id: \.offset) {index, block in NativeReadBlock(block: block, model: model, key: "\(signature)/\(index)", nested: false).id("\(signature)/\(index)")}
         }.frame(maxWidth: 820, alignment: .leading).padding(24).frame(maxWidth: .infinity, alignment: .center)}

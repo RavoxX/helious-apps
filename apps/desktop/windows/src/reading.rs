@@ -13,6 +13,7 @@ pub struct ReadingState {
     pub blocks: Arc<Vec<Block>>,
     pub changed: Instant,
     pub requested: bool,
+    pub loaded: bool,
     pub assets: HashMap<String, Value>,
     pub bytes: HashMap<String, Arc<Vec<u8>>>,
     pub textures: HashMap<String, egui::TextureHandle>,
@@ -25,6 +26,7 @@ impl Default for ReadingState {
             blocks: Arc::new(vec![]),
             changed: Instant::now(),
             requested: false,
+            loaded: false,
             assets: HashMap::new(),
             bytes: HashMap::new(),
             textures: HashMap::new(),
@@ -160,12 +162,15 @@ impl HeliousApp {
                 self.reading.audio = None;
             }
         });
+        if self.reading.loaded && self.reading.blocks.is_empty() {
+            ui.weak("This note is empty. Switch to Source to start writing.");
+        }
         let blocks = self.reading.blocks.clone();
         egui::ScrollArea::vertical()
             .id_salt("native-reader")
             .show(ui, |ui| {
                 self.read_blocks(ui, &blocks, "root", false);
-                if blocks.is_empty() {
+                if !self.reading.loaded {
                     ui.weak("Preparing reading preview…");
                 }
             });

@@ -319,7 +319,10 @@ impl HeliousApp {
                 "reading_document" => {
                     if data["key"] == self.reading.key {
                         match serde_json::from_value(data["blocks"].clone()) {
-                            Ok(blocks) => self.reading.blocks = std::sync::Arc::new(blocks),
+                            Ok(blocks) => {
+                                self.reading.blocks = std::sync::Arc::new(blocks);
+                                self.reading.loaded = true;
+                            }
                             Err(_) => self.error = "Cannot display this reading preview.".into(),
                         }
                     }
