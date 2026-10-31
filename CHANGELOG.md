@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.2 — Refresh macOS automatic update discovery
+
+While automatic update checks are enabled, macOS refreshes GitHub release discovery every fifteen minutes instead of keeping the release feed chosen at startup indefinitely. Sparkle still controls its check/download schedule and verifies the signed archive; disabling automatic checks stops periodic discovery. Manual checks always rediscover releases, and startup/manual checks work independently of the periodic refresh. GitHub prereleases remain supported. No updater key, credential format or stored vault data changes.
+
 ## 0.9.1 — Native sync and dependency hardening
 
 Native sync validates every remote path before downloading or changing files. Hidden components and generated directories (including case variants) use the same exclusion policy as local scanning, direct writes and recovery replay. A paired server cannot create an excluded configuration file before returning a sync error. Existing files, local history and conflict copies retain their stale-write guards. Back up first; preserved journals/configurations containing excluded paths are refused rather than silently rewritten.

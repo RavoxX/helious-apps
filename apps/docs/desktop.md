@@ -6,6 +6,8 @@ Windows uses Rust/egui/eframe with wgpu rendering. macOS uses SwiftUI/AppKit wit
 
 ## Downloads and upgrading
 
+macOS 0.9.2 refreshes release discovery every fifteen minutes while automatic checks are enabled, so a continuously running app does not remain pinned to its startup release. Sparkle retains its own check/download schedule and dirty-draft install guards. Disable automatic checks to stop periodic discovery; manual checks still refresh immediately. This refresh is a GitHub metadata request, not a Cloud account request.
+
 Download from [Helious Apps releases](https://github.com/RavoxX/helious-apps/releases): Windows x64 EXE/MSI, universal macOS DMG (macOS 14+), and a ZIP used by the macOS updater. Verify files with SHA256SUMS.txt.
 
 Old 0.8.0 webview builds need one manual upgrade before self-updating is available. Existing .md folders and .helious history/configuration remain compatible; back up both before upgrading. Native settings retain the com.helious.desktop app-data location and OS credential namespace.

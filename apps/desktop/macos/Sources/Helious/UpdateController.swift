@@ -7,8 +7,25 @@ import Sparkle
     weak var store: WorkspaceStore?
     private var feed: String?
     private var started = false
+    private var startupRequested = false
+    private var refreshTask: Task<Void, Never>?
     private lazy var controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
-    func start() async {await discover(manual: false)}
+    func start() async {
+        guard !startupRequested else {return}
+        startupRequested = true
+        await discover(manual: false)
+        // GitHub's /latest endpoint excludes prereleases. Refresh the selected
+        // signed feed while running instead of pinning automatic checks to the
+        // release that happened to be current when this app launched.
+        refreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {try await Task.sleep(nanoseconds: 900_000_000_000)} catch {return}
+                guard !Task.isCancelled, let self else {return}
+                if self.automaticChecks {await self.discover(manual: false)}
+            }
+        }
+    }
+    deinit {refreshTask?.cancel()}
     func check() {Task {await discover(manual: true)}}
     private func discover(manual: Bool) async {
         do {
