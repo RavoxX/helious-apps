@@ -61,13 +61,20 @@ pub fn forget(server: &str) -> Result<()> {
         Err(_) => Err("Cannot remove the stored OS credential.".into()),
     }
 }
-fn client() -> Result<Client> {
-    Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .timeout(std::time::Duration::from_secs(45))
-        .user_agent(concat!("Helious-Desktop/", env!("CARGO_PKG_VERSION")))
-        .build()
-        .map_err(|_| "Cannot initialize the secure connection.".into())
+fn client() -> Result<&'static Client> {
+    static CLIENT: std::sync::OnceLock<std::result::Result<Client, String>> =
+        std::sync::OnceLock::new();
+    CLIENT
+        .get_or_init(|| {
+            Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .timeout(std::time::Duration::from_secs(45))
+                .user_agent(concat!("Helious-Desktop/", env!("CARGO_PKG_VERSION")))
+                .build()
+                .map_err(|_| "Cannot initialize the secure connection.".into())
+        })
+        .as_ref()
+        .map_err(Clone::clone)
 }
 async fn bytes(mut response: Response) -> Result<Vec<u8>> {
     if response

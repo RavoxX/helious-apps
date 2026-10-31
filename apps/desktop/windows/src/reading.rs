@@ -4,10 +4,12 @@ use eframe::egui::{self, Color32};
 use helious_native::reading::{Block, Span};
 use serde_json::{json, Value};
 use std::{
-    collections::HashMap,
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
     sync::Arc,
     time::{Duration, Instant},
 };
+
 pub struct ReadingState {
     pub key: String,
     pub blocks: Arc<Vec<Block>>,
@@ -19,6 +21,7 @@ pub struct ReadingState {
     pub textures: HashMap<String, egui::TextureHandle>,
     pub audio: Option<(rodio::OutputStream, rodio::Sink, String)>,
 }
+
 impl Default for ReadingState {
     fn default() -> Self {
         Self {
@@ -34,6 +37,7 @@ impl Default for ReadingState {
         }
     }
 }
+
 impl ReadingState {
     pub fn asset(&mut self, mut data: Value, ctx: &egui::Context) -> Result<(), String> {
         let key = string(&data, "key").to_string();
@@ -86,6 +90,7 @@ impl ReadingState {
         Ok(())
     }
 }
+
 fn color(value: &str, fallback: Color32) -> Color32 {
     if value.len() == 7 && value.starts_with('#') {
         if let Ok(rgb) = u32::from_str_radix(&value[1..], 16) {
@@ -94,9 +99,10 @@ fn color(value: &str, fallback: Color32) -> Color32 {
     }
     fallback
 }
+
 fn text_job(spans: &[Span], size: f32, ui: &egui::Ui) -> egui::text::LayoutJob {
     let mut job = egui::text::LayoutJob::default();
-    job.wrap.max_width = ui.available_width();
+    job.wrap.max_width = (ui.available_width() - 16.0).max(120.0);
     for span in spans {
         let mut format = egui::TextFormat {
             font_id: if span.code {
@@ -128,53 +134,70 @@ fn text_job(spans: &[Span], size: f32, ui: &egui::Ui) -> egui::text::LayoutJob {
     }
     job
 }
+
 impl HeliousApp {
     pub fn reading_preview(&mut self, ui: &mut egui::Ui) {
-        let key = helious_native::vault::hash(
-            format!(
-                "{}:{}:{}:{}:{}",
-                self.source,
-                self.vault["id"],
-                self.note["id"],
-                ui.visuals().dark_mode,
-                self.markdown
-            )
-            .as_bytes(),
-        );
+        let key = {
+            let mut hasher = DefaultHasher::new();
+            self.source.hash(&mut hasher);
+            string(&self.vault, "id").hash(&mut hasher);
+            string(&self.note, "id").hash(&mut hasher);
+            ui.visuals().dark_mode.hash(&mut hasher);
+            self.markdown.hash(&mut hasher);
+            format!("{:016x}", hasher.finish())
+        };
         if self.reading.key != key {
             self.reading = ReadingState::default();
             self.reading.key = key;
         }
-        if !self.reading.requested
-            && self.reading.changed.elapsed() > Duration::from_millis(350)
-            && self.pending.is_none()
-        {
-            self.reading.requested = true;
-            self.request("reading_document",json!({"operation":"reading_document","markdown":self.markdown,"dark":ui.visuals().dark_mode,"key":self.reading.key}));
-        }
-        ui.ctx().request_repaint_after(Duration::from_millis(200));
-        ui.horizontal(|ui| {
-            ui.small("Reading · local renderers");
-            if ui.small_button("Clear attachment previews").clicked() {
-                self.reading.assets.clear();
-                self.reading.bytes.clear();
-                self.reading.textures.clear();
-                self.reading.audio = None;
+        if !self.reading.requested {
+            if self.reading.changed.elapsed() > Duration::from_millis(350) && self.pending.is_none()
+            {
+                self.reading.requested = true;
+                self.request(
+                    "reading_document",
+                    json!({"operation":"reading_document","markdown":self.markdown,"dark":ui.visuals().dark_mode,"key":self.reading.key}),
+                );
+            } else {
+                ui.ctx().request_repaint_after(Duration::from_millis(200));
             }
-        });
-        if self.reading.loaded && self.reading.blocks.is_empty() {
-            ui.weak("This note is empty. Switch to Source to start writing.");
         }
-        let blocks = self.reading.blocks.clone();
-        egui::ScrollArea::vertical()
-            .id_salt("native-reader")
+        let colors = crate::chrome::palette(ui.visuals().dark_mode);
+        egui::Frame::new()
+            .fill(colors.card)
+            .stroke(egui::Stroke::new(1.0, colors.line))
+            .corner_radius(6)
+            .inner_margin(egui::Margin::symmetric(14, 10))
             .show(ui, |ui| {
-                self.read_blocks(ui, &blocks, "root", false);
-                if !self.reading.loaded {
-                    ui.weak("Preparing reading preview…");
+                let inner_width = (ui.available_width() - 6.0).max(120.0);
+                ui.set_max_width(inner_width);
+                ui.horizontal_wrapped(|ui| {
+                    ui.small("Reading · local renderers");
+                    if ui.small_button("Clear previews").clicked() {
+                        self.reading.assets.clear();
+                        self.reading.bytes.clear();
+                        self.reading.textures.clear();
+                        self.reading.audio = None;
+                    }
+                });
+                ui.separator();
+                if self.reading.loaded && self.reading.blocks.is_empty() {
+                    ui.weak("This note is empty. Switch to Source to start writing.");
                 }
+                let blocks = self.reading.blocks.clone();
+                egui::ScrollArea::vertical()
+                    .id_salt("native-reader")
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.set_max_width((inner_width - 10.0).max(100.0));
+                        self.read_blocks(ui, &blocks, "root", false);
+                        if !self.reading.loaded {
+                            ui.weak("Preparing reading preview…");
+                        }
+                    });
             });
     }
+
     fn read_blocks(&mut self, ui: &mut egui::Ui, blocks: &[Block], path: &str, nested: bool) {
         for (index, block) in blocks.iter().enumerate() {
             let key = format!("{}/{path}/{index}", self.reading.key);
@@ -385,6 +408,7 @@ impl HeliousApp {
             ui.add_space(8.0);
         }
     }
+
     fn render_asset_button(
         &mut self,
         ui: &mut egui::Ui,
@@ -419,6 +443,7 @@ impl HeliousApp {
             );
         }
     }
+
     fn show_asset(&mut self, ui: &mut egui::Ui, key: &str, asset: &Value) {
         match string(asset, "kind") {
             "image" => {
@@ -447,7 +472,32 @@ impl HeliousApp {
                     .unwrap_or(Value::Null);
                 let current = meta["page"].as_u64().unwrap_or(0);
                 let pages = meta["pages"].as_u64().unwrap_or(0);
-                ui.horizontal(|ui|{for (index,label,enabled)in [(current.saturating_sub(1),"Previous page",current>0),(current,"Render PDF page",pages==0),(current+1,"Next page",pages>0&&current+1<pages)]{if ui.add_enabled(self.pending.is_none()&&enabled,egui::Button::new(label)).clicked(){if let Some(bytes)=self.reading.bytes.get(key){self.request("reading_asset",json!({"operation":"render_pdf","data":STANDARD.encode(bytes.as_slice()),"page":index,"key":image_key}));}}}if pages>0{ui.label(format!("Page {} of {pages}",current+1));}});
+                ui.horizontal(|ui| {
+                    for (index, label, enabled) in [
+                        (current.saturating_sub(1), "Previous page", current > 0),
+                        (current, "Render PDF page", pages == 0),
+                        (
+                            current + 1,
+                            "Next page",
+                            pages > 0 && current + 1 < pages,
+                        ),
+                    ] {
+                        if ui
+                            .add_enabled(self.pending.is_none() && enabled, egui::Button::new(label))
+                            .clicked()
+                        {
+                            if let Some(bytes) = self.reading.bytes.get(key) {
+                                self.request(
+                                    "reading_asset",
+                                    json!({"operation":"render_pdf","data":STANDARD.encode(bytes.as_slice()),"page":index,"key":image_key}),
+                                );
+                            }
+                        }
+                    }
+                    if pages > 0 {
+                        ui.label(format!("Page {} of {pages}", current + 1));
+                    }
+                });
                 if let Some(texture) = self.reading.textures.get(&image_key) {
                     ui.add(egui::Image::from_texture(texture).max_width(ui.available_width()));
                 }
@@ -510,6 +560,7 @@ impl HeliousApp {
             }
         }
     }
+
     fn reading_link(&mut self, target: &str, syntax: &str) {
         if let Ok(url) = url::Url::parse(target) {
             if ["http", "https"].contains(&url.scheme())

@@ -198,10 +198,19 @@ struct Version {
     actor: Value,
     recorded_at: String,
 }
+struct CachedFile {
+    modified: Option<std::time::SystemTime>,
+    size: u64,
+    path: String,
+    hash: String,
+    markdown: Option<String>,
+}
 pub struct Vault {
     pub root: PathBuf,
     pub config: Config,
     pub warnings: Vec<String>,
+    cache: std::collections::HashMap<String, CachedFile>,
+    pending_actions: std::collections::HashMap<String, &'static str>,
     _lock: File,
 }
 impl Vault {
@@ -218,6 +227,7 @@ impl Vault {
             }
         }
         safe(&root, ".helious/lock", true)?;
+        let is_new = read(&root, ".helious/vault.json", true)?.is_none();
         fs::create_dir_all(root.join(".helious"))
             .map_err(|_| "Cannot create vault configuration.")?;
         let lock = fs::OpenOptions::new()
@@ -278,8 +288,13 @@ impl Vault {
             root,
             config,
             warnings: vec![],
+            cache: std::collections::HashMap::new(),
+            pending_actions: std::collections::HashMap::new(),
             _lock: lock,
         };
+        if is_new {
+            vault.save()?;
+        }
         vault.recover()?;
         vault.scan()?;
         Ok(vault)
@@ -299,7 +314,11 @@ impl Vault {
         }
         let version = Version {
             record: record.clone(),
-            data: data.map(|b| STANDARD.encode(b)),
+            data: if record.kind == "note" {
+                data.map(|b| STANDARD.encode(b))
+            } else {
+                None
+            },
             action: action.into(),
             actor: json!({"kind":"local","id":"this-device"}),
             recorded_at: record.updated_at.clone(),
@@ -311,7 +330,12 @@ impl Vault {
             true,
         )
     }
-    fn walk(&mut self, path: &Path, output: &mut Vec<String>, depth: usize) -> Result<()> {
+    fn walk(
+        &mut self,
+        path: &Path,
+        output: &mut Vec<(String, Option<std::time::SystemTime>, u64)>,
+        depth: usize,
+    ) -> Result<()> {
         if depth > 32 {
             return Ok(());
         }
@@ -343,7 +367,7 @@ impl Vault {
                     ));
                     continue;
                 }
-                output.push(relative);
+                output.push((relative, meta.modified().ok(), meta.len()));
                 if output.len() > 50000 {
                     return Err("Local vaults support up to 50,000 files.".into());
                 }
@@ -353,12 +377,14 @@ impl Vault {
     }
     pub fn scan(&mut self) -> Result<Value> {
         self.warnings.clear();
-        let mut paths = vec![];
-        self.walk(&self.root.clone(), &mut paths, 0)?;
-        paths.sort();
+        let mut entries = vec![];
+        self.walk(&self.root.clone(), &mut entries, 0)?;
+        entries.sort_by(|a, b| a.0.cmp(&b.0));
         let mut present = HashSet::new();
         let mut files = vec![];
         let mut bytes = 0usize;
+        let mut dirty = false;
+        let scan_started = std::time::SystemTime::now();
         let personal = self
             .config
             .spaces
@@ -367,7 +393,7 @@ impl Vault {
             .ok_or("Missing Personal Space.")?
             .id
             .clone();
-        for path in paths {
+        for (path, modified, disk_size) in entries {
             let key = path.to_lowercase();
             if !present.insert(key.clone()) {
                 return Err(
@@ -375,26 +401,65 @@ impl Vault {
                         .into(),
                 );
             }
-            let data =
-                read(&self.root, &path, false)?.ok_or("A file changed during indexing. Retry.")?;
-            let fingerprint = hash(&data);
             let previous = self.config.files.get(&key).cloned();
+            let note = path.to_ascii_lowercase().ends_with(".md");
+            let cached_hit = match (&previous, self.cache.get(&key), modified) {
+                (Some(prev), Some(cached), Some(mtime))
+                    if !prev.deleted
+                        && prev.path == path
+                        && prev.hash == cached.hash
+                        && cached.path == path
+                        && cached.size == disk_size
+                        && cached.modified == Some(mtime)
+                        && scan_started
+                            .duration_since(mtime)
+                            .is_ok_and(|age| age.as_secs() >= 2) =>
+                {
+                    Some((cached.hash.clone(), cached.size, cached.markdown.clone()))
+                }
+                _ => None,
+            };
+            let (fingerprint, size, markdown, raw_bytes) =
+                if let Some((fingerprint, size, markdown)) = cached_hit {
+                    if let Some(ref md) = markdown {
+                        bytes += md.len();
+                        if bytes > 64 * 1024 * 1024 {
+                            return Err("Indexed Markdown is limited to 64 MiB per vault.".into());
+                        }
+                    }
+                    (fingerprint, size, markdown, None)
+                } else {
+                    let data = read(&self.root, &path, false)?
+                        .ok_or("A file changed during indexing. Retry.")?;
+                    let fingerprint = hash(&data);
+                    let size = data.len() as u64;
+                    let markdown = if note {
+                        bytes += data.len();
+                        if bytes > 64 * 1024 * 1024 {
+                            return Err("Indexed Markdown is limited to 64 MiB per vault.".into());
+                        }
+                        Some(
+                            String::from_utf8(data.clone())
+                                .map_err(|_| format!("Markdown must be UTF-8: {}", path))?,
+                        )
+                    } else {
+                        None
+                    };
+                    self.cache.insert(
+                        key.clone(),
+                        CachedFile {
+                            modified,
+                            size,
+                            path: path.clone(),
+                            hash: fingerprint.clone(),
+                            markdown: markdown.clone(),
+                        },
+                    );
+                    (fingerprint, size, markdown, Some(data))
+                };
             let changed = previous
                 .as_ref()
                 .is_none_or(|p| p.hash != fingerprint || p.deleted || p.path != path);
-            let note = path.to_ascii_lowercase().ends_with(".md");
-            let markdown = if note {
-                bytes += data.len();
-                if bytes > 64 * 1024 * 1024 {
-                    return Err("Indexed Markdown is limited to 64 MiB per vault.".into());
-                }
-                Some(
-                    String::from_utf8(data.clone())
-                        .map_err(|_| format!("Markdown must be UTF-8: {}", path))?,
-                )
-            } else {
-                None
-            };
             let record = Record {
                 id: previous.as_ref().map_or_else(id, |p| p.id.clone()),
                 path: path.clone(),
@@ -413,22 +478,25 @@ impl Vault {
                 },
                 kind: if note { "note" } else { "attachment" }.into(),
                 deleted: false,
-                size: data.len() as u64,
+                size,
             };
             if changed {
+                dirty = true;
                 if note {
                     self.record_activity(&record.space_id);
                 }
-                self.version(
-                    &record,
-                    Some(&data),
-                    if previous.is_some() {
+                let action = self
+                    .pending_actions
+                    .remove(&key)
+                    .unwrap_or(if previous.is_some() {
                         "external-edit"
                     } else {
                         "import"
-                    },
-                )?;
+                    });
+                self.version(&record, raw_bytes.as_deref(), action)?;
                 self.config.files.insert(key, record.clone());
+            } else {
+                self.pending_actions.remove(&key);
             }
             let mut item =
                 serde_json::to_value(&record).map_err(|_| "Cannot encode local index.")?;
@@ -437,6 +505,7 @@ impl Vault {
             }
             files.push(item);
         }
+        self.cache.retain(|k, _| present.contains(k));
         let missing: Vec<_> = self
             .config
             .files
@@ -445,19 +514,57 @@ impl Vault {
             .map(|(k, f)| (k.clone(), f.clone()))
             .collect();
         for (key, mut record) in missing {
+            dirty = true;
             if record.kind == "note" {
                 self.record_activity(&record.space_id);
             }
             record.deleted = true;
             record.revision += 1;
             record.updated_at = now();
-            self.version(&record, None, "external-delete")?;
+            let action = self
+                .pending_actions
+                .remove(&key)
+                .unwrap_or("external-delete");
+            self.version(&record, None, action)?;
             self.config.files.insert(key, record);
         }
-        self.save()?;
+        self.pending_actions.clear();
+        if dirty {
+            self.save()?;
+        }
         Ok(
             json!({"id":self.config.id,"name":self.config.name,"path":self.root.to_string_lossy(),"spaces":self.config.spaces,"files":files,"deletedFiles":self.config.files.values().filter(|f|f.deleted).collect::<Vec<_>>(),"warnings":self.warnings,"sync":self.config.sync,"activity":self.config.activity,"activitySince":self.config.activity_since}),
         )
+    }
+    pub fn read_note(&mut self, note_id: &str) -> Result<Value> {
+        if let Some(record) = self
+            .config
+            .files
+            .values()
+            .find(|r| !r.deleted && r.kind == "note" && r.id == note_id)
+            .cloned()
+        {
+            if let Some(bytes) = read(&self.root, &record.path, false)? {
+                if hash(&bytes) == record.hash {
+                    let markdown = String::from_utf8(bytes)
+                        .map_err(|_| format!("Markdown must be UTF-8: {}", record.path))?;
+                    let mut item =
+                        serde_json::to_value(&record).map_err(|_| "Cannot encode local note.")?;
+                    item["markdown"] = json!(markdown);
+                    return Ok(item);
+                }
+            }
+        }
+        let snapshot = self.scan()?;
+        snapshot["files"]
+            .as_array()
+            .and_then(|files| {
+                files
+                    .iter()
+                    .find(|n| n["kind"] == "note" && n["id"] == note_id)
+            })
+            .cloned()
+            .ok_or("Note not found.".into())
     }
     fn record_activity(&mut self, space_id: &str) {
         let date = Utc::now().format("%Y-%m-%d").to_string();
@@ -578,6 +685,7 @@ impl Vault {
                 ));
                 continue;
             }
+            let mut case_rename_from = None;
             if let Some(source) = &op.source_id {
                 if let Some(record) = self
                     .config
@@ -586,16 +694,48 @@ impl Vault {
                     .find(|r| r.id == *source)
                     .cloned()
                 {
+                    if record.path.eq_ignore_ascii_case(&op.path) && record.path != op.path {
+                        case_rename_from = Some(record.path.clone());
+                    }
                     self.config.files.remove(&record.path.to_lowercase());
                     self.config.files.insert(key.clone(), record);
                 }
             }
             if let Some(data) = data {
                 atomic(&self.root, &op.path, &data, false)?;
+                if let Some(old_path) = case_rename_from {
+                    let old_parts: Vec<&str> = old_path.split('/').collect();
+                    let new_parts: Vec<&str> = op.path.split('/').collect();
+                    if old_parts.len() == new_parts.len() {
+                        let mut dir = self.root.clone();
+                        for (old_seg, new_seg) in old_parts.iter().zip(new_parts.iter()) {
+                            if old_seg != new_seg && old_seg.eq_ignore_ascii_case(new_seg) {
+                                let from = dir.join(old_seg);
+                                let temp = dir.join(format!("~helious-case-{}", &id()[..8]));
+                                let to = dir.join(new_seg);
+                                if fs::rename(&from, &temp).is_ok() {
+                                    let _ = fs::rename(&temp, &to);
+                                }
+                            }
+                            dir.push(new_seg);
+                        }
+                    }
+                }
             } else if current.is_some() {
                 fs::remove_file(safe(&self.root, &op.path, false)?)
                     .map_err(|_| "Cannot remove vault file.")?;
             }
+            let action = if op.data.is_none() {
+                "local-delete"
+            } else if op.source_id.is_some() {
+                "local-move"
+            } else if op.expected_hash.is_none() {
+                "local-create"
+            } else {
+                "local-edit"
+            };
+            self.pending_actions.insert(key.clone(), action);
+            self.cache.remove(&key);
             if op.data.is_some() {
                 let record = self
                     .config

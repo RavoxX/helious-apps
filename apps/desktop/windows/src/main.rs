@@ -3,13 +3,20 @@ mod app;
 mod authoring;
 mod canvas;
 mod chrome;
+mod editor;
+mod explorer;
 mod extensions;
 mod graph;
+mod inspector;
+mod pages;
+mod palette;
 mod reading;
-mod screens;
+mod sidebar;
+mod state;
 #[cfg(test)]
 mod ui_tests;
 mod worker;
+
 fn main() -> eframe::Result {
     let icon = image::load_from_memory(include_bytes!("../../assets/icons/128x128.png"))
         .expect("Bundled icon")
@@ -18,7 +25,7 @@ fn main() -> eframe::Result {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("Helious")
             .with_inner_size([1440.0, 940.0])
-            .with_min_inner_size([900.0, 600.0])
+            .with_min_inner_size([920.0, 620.0])
             .with_icon(eframe::egui::IconData {
                 width: icon.width(),
                 height: icon.height(),

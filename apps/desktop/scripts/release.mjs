@@ -59,7 +59,7 @@ const manifest = {
   schema: 1,
   version,
   notes:
-    'Redesigned native navigation, grouped vaults and notes, a focused editor inspector, improved themes and settings, and signed updates.',
+    'Native note tabs, folder navigation, quick switcher, find and replace, scoped search, note rename and move, and a reorganized editor inspector.',
   windows: entry('.exe'),
   macos: entry('.zip'),
 };
@@ -80,7 +80,7 @@ await writeFile(
 <title>Helious native updates</title><item><title>Helious ${version}</title>
 <pubDate>${new Date().toUTCString()}</pubDate><sparkle:version>${version}</sparkle:version><sparkle:shortVersionString>${version}</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-<description>Native authoring, Canvas, rich reading and permission-reviewed draft extensions.</description>
+<description>Native note tabs, scoped search, quick switcher, find and replace, and reorganized editor tools.</description>
 <enclosure url="${base}/${archive.name}" sparkle:edSignature="${archiveSignature}" length="${archive.size}" type="application/zip"/>
 </item></channel></rss>\n`,
 );

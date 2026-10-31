@@ -289,3 +289,200 @@ fn native_navigation_settings_and_local_save_are_functional() {
     settle(&mut harness);
     assert!(!vault.path().join("Created.md").exists());
 }
+
+#[test]
+fn folder_tree_tabs_search_rename_context_palette_and_graph_previews_work() {
+    let folder = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir().unwrap();
+    let vault_dir = root.path().join("Helious Engineering");
+    std::fs::create_dir_all(vault_dir.join("Projects")).unwrap();
+    std::fs::create_dir_all(vault_dir.join("Operations")).unwrap();
+    std::fs::write(
+        vault_dir.join("Projects/Architecture.md"),
+        "---\ntags:\n  - system\n  - native\nstatus: active\n---\n# Native Architecture\n\nHelious keeps notes as plain Markdown with `.helious/` history and Space isolation.\n\n## Core Principles\n\n- Local-first storage with atomic saves\n- Connected to [[/Operations/Runbook|Production Runbook]] and [[/Projects/Roadmap|Q4 Roadmap]]\n\n```rust\npub fn verify(hash: &str) -> bool { !hash.is_empty() }\n```\n\n## Sync Boundaries\n\nPersonal Spaces stay on this device unless explicitly mapped.",
+    )
+    .unwrap();
+    std::fs::write(
+        vault_dir.join("Projects/Roadmap.md"),
+        "# Q4 Roadmap\n\nReview [[/Projects/Architecture|Native Architecture]] before tagging releases. #roadmap",
+    )
+    .unwrap();
+    std::fs::write(
+        vault_dir.join("Operations/Runbook.md"),
+        "# Production Runbook\n\nFollow [[/Projects/Architecture]] checklists during deployment. #ops",
+    )
+    .unwrap();
+
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(1480.0, 940.0))
+        .with_accessibility_check(true)
+        .build_eframe(|cc| HeliousApp::with_folder(cc, folder.path().into()));
+    harness.state_mut().automatic_checks = false;
+    harness.state_mut().next_poll = Instant::now() + Duration::from_secs(3600);
+    settle(&mut harness);
+
+    harness.state_mut().request(
+        "open_local",
+        json!({"operation":"open_local","path":&vault_dir}),
+    );
+    settle(&mut harness);
+
+    // Move all 3 notes into the shared Code Space so cross-note wikilinks & backlinks resolve!
+    let code_space = harness
+        .state()
+        .spaces
+        .iter()
+        .find(|s| s["kind"] == "code")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    for path in [
+        "Projects/Architecture.md",
+        "Projects/Roadmap.md",
+        "Operations/Runbook.md",
+    ] {
+        let id = harness
+            .state()
+            .notes
+            .iter()
+            .find(|n| n["path"] == path)
+            .unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        harness.state_mut().select_note(&id);
+        settle(&mut harness);
+        harness.state_mut().space = code_space.clone();
+        harness.state_mut().save();
+        settle(&mut harness);
+    }
+
+    // Open Architecture so tabs bar shows [Architecture.md, Roadmap.md, Runbook.md]
+    let arch_id = harness
+        .state()
+        .notes
+        .iter()
+        .find(|n| n["path"] == "Projects/Architecture.md")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    harness.state_mut().select_note(&arch_id);
+    settle(&mut harness);
+    harness.state_mut().request_note_context();
+    settle(&mut harness);
+    assert_eq!(harness.state().tabs.len(), 3);
+    assert_eq!(
+        harness.state().inspector_state.context["backlinks"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+
+    if let Ok(path) = std::env::var("HELIOUS_NATIVE_PREVIEW_DIR") {
+        std::fs::create_dir_all(&path).unwrap();
+        // Split mode dark preview (Explorer Tree + Tabs + Source + Reading + Context Inspector)
+        harness.state_mut().mode = 2;
+        harness.state_mut().theme = "dark".into();
+        harness.step();
+        std::thread::sleep(Duration::from_millis(400));
+        harness.step();
+        settle(&mut harness);
+        reading_ready(&mut harness);
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-split-dark.png"))
+            .unwrap();
+
+        // Split mode light preview
+        harness.state_mut().theme = "light".into();
+        harness.step();
+        std::thread::sleep(Duration::from_millis(400));
+        harness.step();
+        settle(&mut harness);
+        reading_ready(&mut harness);
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-split-light.png"))
+            .unwrap();
+
+        // Command palette preview in dark mode
+        harness.state_mut().theme = "dark".into();
+        harness.state_mut().mode = 0;
+        harness.state_mut().open_palette();
+        harness.step();
+        harness.step();
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-palette-dark.png"))
+            .unwrap();
+        harness.state_mut().palette.open = false;
+
+        // Graph dark & light previews
+        harness.state_mut().go(Page::Graph);
+        settle(&mut harness);
+        for _ in 0..40 {
+            harness.step();
+        }
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-graph-dark.png"))
+            .unwrap();
+        harness.state_mut().theme = "light".into();
+        harness.step();
+        harness.step();
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-graph-light.png"))
+            .unwrap();
+        harness.state_mut().theme = "dark".into();
+        harness.state_mut().go(Page::Workspace);
+        harness.step();
+    }
+
+    // Verify full-text search UI
+    harness.get_by_label("Full-text search").click();
+    harness.step();
+    harness.state_mut().filter = "tag:system local-first".into();
+    harness.step();
+    harness.get_by_label("Search").click();
+    settle(&mut harness);
+    assert_eq!(harness.state().explorer.search_results.len(), 1);
+    if let Ok(path) = std::env::var("HELIOUS_NATIVE_PREVIEW_DIR") {
+        harness
+            .input_mut()
+            .events
+            .push(egui::Event::PointerMoved(egui::pos2(24.0, 24.0)));
+        harness.step();
+        harness
+            .render()
+            .unwrap()
+            .save(std::path::Path::new(&path).join("windows-search-dark.png"))
+            .unwrap();
+    }
+    harness.get_by_label("Filter tree").click();
+    harness.state_mut().filter.clear();
+    harness.step();
+
+    // Verify coordinated inline Rename UI
+    harness.get_by_label("Rename…").click();
+    harness.step();
+    harness.state_mut().editor_tools.rename_path = "Projects/System-Architecture.md".into();
+    harness.step();
+    harness.get_by_label("Apply rename").click();
+    settle(&mut harness);
+    assert!(vault_dir.join("Projects/System-Architecture.md").is_file());
+    assert!(!vault_dir.join("Projects/Architecture.md").exists());
+    assert!(
+        std::fs::read_to_string(vault_dir.join("Projects/Roadmap.md"))
+            .unwrap()
+            .contains("[[/Projects/System-Architecture|Native Architecture]]")
+    );
+}

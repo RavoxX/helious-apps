@@ -123,3 +123,147 @@ fn extension_grants_persist_and_disable_revokes_execution_without_saving_drafts(
         .unwrap();
     assert!(engine.execute(req).is_err());
 }
+
+#[test]
+fn coordinated_rename_search_context_and_partial_settings_preserve_invariants() {
+    let settings = tempfile::tempdir().unwrap();
+    let folder = tempfile::tempdir().unwrap();
+    let mut engine = Engine::new(settings.path().into()).unwrap();
+    let vault = engine
+        .execute(json!({"operation":"open_local","path":folder.path()}))
+        .unwrap();
+    let id = vault["id"].clone();
+    let code = vault["spaces"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["kind"] == "code")
+        .unwrap()["id"]
+        .clone();
+
+    let target = engine
+        .execute(json!({
+            "operation": "create_note",
+            "source": "local",
+            "vaultId": id,
+            "body": {
+                "path": "todo.md",
+                "spaceId": code,
+                "markdown": "# Launch Checklist\n\nSecret {{secret:prod_token}} and #release\n## Verification\nRun tests."
+            }
+        }))
+        .unwrap()["note"]
+        .clone();
+    let linker = engine
+        .execute(json!({
+            "operation": "create_note",
+            "source": "local",
+            "vaultId": id,
+            "body": {
+                "path": "Overview.md",
+                "spaceId": code,
+                "markdown": "# Overview\n\nTrack [[todo|Launch Tasks]] before ship."
+            }
+        }))
+        .unwrap()["note"]
+        .clone();
+
+    // Case-only rename on NTFS/APFS updates exact directory entry casing.
+    let case_renamed = engine
+        .execute(json!({
+            "operation": "rename_note",
+            "source": "local",
+            "vaultId": id,
+            "id": target["id"],
+            "path": "TODO.md",
+            "hash": target["hash"],
+        }))
+        .unwrap();
+    assert_eq!(case_renamed["note"]["path"], "TODO.md");
+
+    // Folder move rewrites inbound wikilinks atomically in the same Space.
+    let moved = engine
+        .execute(json!({
+            "operation": "rename_note",
+            "source": "local",
+            "vaultId": id,
+            "id": target["id"],
+            "path": "Ops/Launch.md",
+            "hash": case_renamed["note"]["hash"],
+        }))
+        .unwrap();
+    assert_eq!(moved["note"]["path"], "Ops/Launch.md");
+    assert_eq!(moved["updatedLinks"], 1);
+    let updated_linker = engine
+        .execute(json!({
+            "operation": "read_note",
+            "source": "local",
+            "vaultId": id,
+            "id": linker["id"],
+        }))
+        .unwrap();
+    assert!(updated_linker["note"]["markdown"]
+        .as_str()
+        .unwrap()
+        .contains("[[/Ops/Launch|Launch Tasks]]"));
+
+    // Context exposes outline + backlinks; search finds tags/body and masks secrets.
+    let ctx = engine
+        .execute(json!({
+            "operation": "note_context",
+            "source": "local",
+            "vaultId": id,
+            "id": target["id"],
+        }))
+        .unwrap();
+    assert_eq!(ctx["backlinks"].as_array().unwrap().len(), 1);
+    assert_eq!(ctx["headings"].as_array().unwrap().len(), 2);
+
+    let hits = engine
+        .execute(json!({
+            "operation": "search_notes",
+            "source": "local",
+            "vaultId": id,
+            "query": "tag:release Verification",
+        }))
+        .unwrap();
+    assert_eq!(hits["results"].as_array().unwrap().len(), 1);
+    assert!(!hits["results"][0]["snippet"]
+        .as_str()
+        .unwrap()
+        .contains("prod_token"));
+
+    // History records local actions accurately rather than external-edit.
+    let history = engine
+        .execute(json!({
+            "operation": "history",
+            "source": "local",
+            "vaultId": id,
+            "id": target["id"],
+        }))
+        .unwrap();
+    let actions: Vec<&str> = history["versions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v["action"].as_str())
+        .collect();
+    assert!(actions.contains(&"local-create"));
+    assert!(actions.contains(&"local-move"));
+
+    // Partial settings updates must preserve automaticInstall / automaticChecks.
+    engine
+        .execute(json!({
+            "operation": "settings",
+            "settings": {"theme": "dark", "fontSize": 17, "automaticChecks": false, "automaticInstall": true}
+        }))
+        .unwrap();
+    let merged = engine
+        .execute(json!({
+            "operation": "settings",
+            "settings": {"theme": "light", "fontSize": 18, "wrap": false}
+        }))
+        .unwrap();
+    assert_eq!(merged["automaticChecks"], false);
+    assert_eq!(merged["automaticInstall"], true);
+}
