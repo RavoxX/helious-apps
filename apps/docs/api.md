@@ -56,7 +56,7 @@ Passwords must be 12â€“128 characters. Emails are lowercased. Name length is 1â€
 
 ## Account panel
 
-Use **Sessions** to inspect and revoke other browsers. **Sign out** revokes the current browser. Administrators can close registration in **Account & server**. Password changes, TOTP and token management arrive in later milestones.
+Use **Sessions** to inspect and revoke other browsers. **Sign out** revokes the current browser. Administrators can close registration in **Account & server**. Account settings also include password changes, TOTP and agent/OAuth connection management; the endpoint groups below describe their security requirements.
 
 ## Knowledge endpoints
 
@@ -125,7 +125,7 @@ Space-aware read collections accept an optional ObjectId `spaceId`: notes, searc
 | GET    | `/api/vaults/:v/notes/:n/history/:revision`         | One permitted `version`, including full Markdown                                                    |
 | POST   | `/api/vaults/:v/notes/:n/history/:revision/restore` | `{revision: currentRevision}`; restore content and original space at current path as a new revision |
 
-Policies are `none`, `read` or `read-write` and are ceilings on future token grants, not credentials. Both current-note and historical-space permissions apply to recovery. Stale saves/policies/restores and occupied recovery paths return 409 without partial changes. A denied/unknown space or note returns 404 without metadata. Vault and space administration is owner-only; trusted agent principals are tested against the same route service but no remote adapter exists yet. See [Spaces](./spaces) and [History](./history).
+Policies are `none`, `read` or `read-write` and are ceilings on explicit token grants, not credentials. Both current-note and historical-space permissions apply to recovery. Stale saves/policies/restores and occupied recovery paths return 409 without partial changes. A denied/unknown space or note returns 404 without metadata. Vault and space administration is owner-only; scoped remote MCP uses the same permission service. See [Spaces](./spaces), [History](./history) and [MCP](./mcp).
 
 ## Secrets and account protection
 

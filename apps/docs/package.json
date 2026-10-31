@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev --host 127.0.0.1 --port 5175",
-    "build": "vitepress build",
+    "build": "node ../../scripts/browser-notices.mjs docs && vitepress build",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

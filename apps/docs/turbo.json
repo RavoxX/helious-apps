@@ -1,0 +1,12 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/scripts/browser-notices.mjs",
+        "$TURBO_ROOT$/scripts/licenses/**"
+      ]
+    }
+  }
+}

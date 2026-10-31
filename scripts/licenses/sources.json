@@ -1,0 +1,18 @@
+{
+  "standardwebhooks-1.1.1.txt": {
+    "source": "https://raw.githubusercontent.com/standard-webhooks/standard-webhooks/b4d2c14fc5b4ccff3ff271e3b087dff812254c59/LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  "algolia-autocomplete-1.17.7.txt": {
+    "source": "https://raw.githubusercontent.com/algolia/autocomplete/v1.17.7/LICENSE",
+    "sha256": "1e605499213e06118cc81abc00b32bbb33ead185d9b0e190f2662588e8806f02"
+  },
+  "algolia-docsearch-3.8.2.txt": {
+    "source": "https://raw.githubusercontent.com/algolia/docsearch/v3.8.2/LICENSE",
+    "sha256": "1e605499213e06118cc81abc00b32bbb33ead185d9b0e190f2662588e8806f02"
+  },
+  "simple-icons-16.36.0.txt": {
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/16.36.0/LICENSE.md",
+    "sha256": "9046848b63a5c92bff14e4accca80bd987e0623b74adf9226ce5198d312b79d5"
+  }
+}

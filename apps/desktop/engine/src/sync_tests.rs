@@ -7,7 +7,7 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Mutex,
     },
 };
@@ -16,6 +16,7 @@ struct Server {
     origin: String,
     files: Arc<Mutex<BTreeMap<String, (Value, String)>>>,
     stop: Arc<AtomicBool>,
+    downloads: Arc<AtomicUsize>,
     worker: Option<std::thread::JoinHandle<()>>,
 }
 impl Server {
@@ -25,6 +26,8 @@ impl Server {
         let origin = format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port());
         let files = Arc::new(Mutex::new(BTreeMap::<String, (Value, String)>::new()));
         let stop = Arc::new(AtomicBool::new(false));
+        let downloads = Arc::new(AtomicUsize::new(0));
+        let fetched = downloads.clone();
         let (data, done) = (files.clone(), stop.clone());
         let worker = std::thread::spawn(move || {
             while !done.load(Ordering::Relaxed) {
@@ -82,6 +85,7 @@ impl Server {
                     assert!(path.ends_with(&format!("spaceIds={CODE}")));
                     json!({"files":files.values().map(|(v,_)|v.clone()).collect::<Vec<_>>()})
                 } else if path.contains("/sync/file?") {
+                    fetched.fetch_add(1, Ordering::Relaxed);
                     let url = url::Url::parse(&format!("http://localhost{path}")).unwrap();
                     let id = url
                         .query_pairs()
@@ -132,6 +136,7 @@ impl Server {
             origin,
             files,
             stop,
+            downloads,
             worker: Some(worker),
         }
     }
@@ -226,6 +231,25 @@ fn native_sync_preserves_personal_and_conflicts_and_refreshes_stale_choices() {
     engine.execute(sync.clone()).unwrap();
     engine.execute(choice).unwrap();
     assert_eq!(server.files.lock().unwrap()["Code.md"].1, "local three");
+    let before = server.downloads.load(Ordering::Relaxed);
+    server.edit("A new valid note.md", "must not partly sync");
+    for path in [
+        ".npmrc",
+        ".git/hooks/pre-commit",
+        "nested/.cargo/config.toml",
+        "Node_Modules/tool.js",
+        "notes/TARGET/build.rs",
+    ] {
+        server.edit(path, "untrusted");
+        let error = engine.execute(sync.clone()).unwrap_err();
+        assert!(error.contains("excluded or invalid"), "{error}");
+        assert_eq!(server.downloads.load(Ordering::Relaxed), before);
+        assert!(!folder.path().join(path).exists());
+        assert!(!folder.path().join("A new valid note.md").exists());
+        assert!(!folder.path().join(".helious/pending.json").exists());
+        server.files.lock().unwrap().remove(path);
+    }
+    server.files.lock().unwrap().remove("A new valid note.md");
     server.edit("Private.md", "must not overwrite personal");
     assert!(engine.execute(sync).is_err());
     assert_eq!(

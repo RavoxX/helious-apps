@@ -1,5 +1,7 @@
 # Native desktop apps
 
+Version 0.9.1 hardens the native sync path boundary and updates formula rendering. Incoming manifests containing hidden/generated components are refused before any download/write, including case variants of `node_modules` and `target`. Local scanning and non-internal writes use the same policy. Existing excluded files are left untouched. Back up the complete folder first; an old configuration or recovery journal containing excluded paths is preserved and refused rather than silently modified. Disconnect sync and review such metadata on a copy before attempting recovery.
+
 Windows uses Rust/egui/eframe with wgpu rendering. macOS uses SwiftUI/AppKit with native navigation, folder picker, toolbar, text editor and Settings scene. A shared Rust engine handles guarded vault files, history, watching, OS-stored sessions and selected-Space sync. Neither interface embeds the website.
 
 ## Downloads and upgrading

@@ -129,6 +129,65 @@ fn rejects_unsafe_paths_internal_writes_and_duplicate_processes() {
     assert!(!folder.path().join("Too large.md").exists());
 }
 #[test]
+fn excluded_paths_never_reach_writes_or_recovery() {
+    let folder = tempfile::tempdir().unwrap();
+    fs::write(folder.path().join("Keep.md"), "keep").unwrap();
+    fs::create_dir(folder.path().join("TARGET")).unwrap();
+    fs::write(folder.path().join("TARGET/existing.md"), "external").unwrap();
+    let mut vault = Vault::open(folder.path().into()).unwrap();
+    let space = vault.config.spaces[0].id.clone();
+    assert!(!vault.config.files.contains_key("target/existing.md"));
+    for path in [
+        ".npmrc",
+        ".git/hooks/pre-commit",
+        "nested/.cargo/config.toml",
+        "node_modules/tool.js",
+        "Node_Modules/tool.js",
+        "notes/TARGET/file.md",
+    ] {
+        // A batch must fail before even its first legitimate write.
+        assert!(
+            vault
+                .commit(vec![
+                    op("New.md", None, Some("new"), &space),
+                    op(path, None, Some("untrusted"), &space)
+                ])
+                .is_err(),
+            "{path}"
+        );
+        assert!(!folder.path().join("New.md").exists());
+        assert!(!folder.path().join(path).exists());
+        assert!(!folder.path().join(".helious/pending.json").exists());
+        assert!(read(folder.path(), path, false).is_err());
+        assert!(atomic(folder.path(), path, b"untrusted", false).is_err());
+    }
+    // Old or tampered journals cannot bypass the same filesystem boundary.
+    atomic(
+        folder.path(),
+        ".helious/pending.json",
+        &serde_json::to_vec(&vec![
+            op("New.md", None, Some("new"), &space),
+            op(".npmrc", None, Some("untrusted"), &space),
+        ])
+        .unwrap(),
+        true,
+    )
+    .unwrap();
+    drop(vault);
+    assert!(Vault::open(folder.path().into()).is_err());
+    assert!(!folder.path().join(".npmrc").exists());
+    assert!(!folder.path().join("New.md").exists());
+    assert_eq!(
+        fs::read_to_string(folder.path().join("Keep.md")).unwrap(),
+        "keep"
+    );
+    assert_eq!(
+        fs::read_to_string(folder.path().join("TARGET/existing.md")).unwrap(),
+        "external"
+    );
+    assert!(folder.path().join(".helious/pending.json").exists());
+}
+#[test]
 fn interrupted_journal_replays_and_preserves_concurrent_edits() {
     let folder = tempfile::tempdir().unwrap();
     fs::write(folder.path().join("Note.md"), "old").unwrap();

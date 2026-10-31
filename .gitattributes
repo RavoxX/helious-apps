@@ -1,0 +1,2 @@
+# Exact upstream bytes are checked against sources.json on every platform.
+scripts/licenses/*.txt -text

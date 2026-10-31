@@ -5,7 +5,13 @@ node_modules
 **/.vitepress/cache
 **/.vitepress/dist
 .git
-.env
+**/.env
+**/.env.*
+!**/.env.example
+**/target
+**/.build
+**/.swiftpm
+**/*.tsbuildinfo
 .cache
 .local
 test-results

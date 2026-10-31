@@ -25,6 +25,13 @@ pub fn now() -> String {
     Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 pub const FILE_LIMIT: u64 = 20 * 1024 * 1024;
+// Enumeration and every non-internal filesystem operation share this boundary.
+// Remote sync must not create files that subsequent scans cannot see.
+pub fn excluded_component(name: &str) -> bool {
+    name.starts_with('.')
+        || name.eq_ignore_ascii_case("node_modules")
+        || name.eq_ignore_ascii_case("target")
+}
 pub fn logical(value: &str) -> Result<String> {
     let value: String = value.nfc().collect();
     if value.is_empty()
@@ -40,7 +47,7 @@ pub fn logical(value: &str) -> Result<String> {
         || parts.iter().any(|p| {
             p.is_empty() || *p == "." || *p == ".." || p.len() > 255 || p.ends_with(['.', ' '])
         })
-        || parts[0].eq_ignore_ascii_case(".helious")
+        || parts.iter().any(|p| excluded_component(p))
     {
         return Err("Invalid vault path.".into());
     }
@@ -311,7 +318,7 @@ impl Vault {
         for entry in fs::read_dir(path).map_err(|_| "Cannot scan vault folder.")? {
             let entry = entry.map_err(|_| "Cannot inspect folder entry.")?;
             let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with('.') || ["node_modules", "target"].contains(&name.as_str()) {
+            if excluded_component(&name) {
                 continue;
             }
             let meta =
@@ -525,6 +532,10 @@ impl Vault {
         Ok(snapshot)
     }
     fn apply(&mut self, operations: &[Operation]) -> Result<bool> {
+        // Recovery journals use the same policy, before replaying any member.
+        for op in operations {
+            logical(&op.path)?;
+        }
         let mut conflicted = false;
         for op in operations {
             let key = op.path.to_lowercase();

@@ -22,7 +22,7 @@ Local traversal respects the current filters: it does not cross a filtered-out n
 
 The filter field searches titles and paths, with the same `tag:`, `-tag:`, `path:` and `file:` operators as [vault search](./knowledge#search-syntax). This graph filter does not search full note bodies. Quoted phrases and literal terms work; regex and `line:` are not supported.
 
-- **Attachments** adds ready GridFS files and their links. Click an attachment to inspect it, then use its download action. Inline viewers remain later work.
+- **Attachments** adds ready GridFS files and their links. Click an attachment to inspect it, then use its download action. Supported inline media previews are available from saved-note embeds; see [reading](./reading).
 - **Orphan notes** includes nodes with no incoming or outgoing graph connections.
 - **Existing files only** hides unresolved target nodes. Disable it to see missing or ambiguous destinations. Those nodes can be inspected but cannot be opened as saved notes.
 

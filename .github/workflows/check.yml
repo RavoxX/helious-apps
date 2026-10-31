@@ -20,6 +20,7 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
@@ -28,6 +29,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - run: docker build -t helious:ci .
+      - run: node scripts/self-host-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

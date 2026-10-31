@@ -35,6 +35,8 @@ export default defineConfig({
           { text: 'MCP & AI connections', link: '/mcp' },
           { text: 'Desktop, local folders & sync', link: '/desktop' },
           { text: 'Deployment & backups', link: '/deployment' },
+          { text: 'Operations & incident recovery', link: '/operations' },
+          { text: 'Dependencies & notices', link: '/dependencies' },
           { text: 'Roadmap', link: '/roadmap' },
         ],
       },

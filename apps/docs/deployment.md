@@ -1,5 +1,7 @@
 # Deployment, upgrades and backups
 
+Review the [operations and incident recovery checklist](./operations) before accepting real accounts, and [dependencies/notices](./dependencies) when distributing images. Docker build contexts exclude local vault/cache state, native build targets and environment variants; keep private deployment secrets outside tracked source.
+
 ## One origin, HTTPS
 
 Run `docker compose up --build -d`. The app publishes to `127.0.0.1:3000`; MongoDB has no host port. Set `PUBLIC_URL` to your exact HTTPS origin and `COOKIE_SECURE=true` before remote use. Set `TRUST_PROXY` only to the actual reverse proxy's IP/CIDR as observed by the app. Do not use `true` or trust the entire internet.

@@ -12,6 +12,7 @@ playwright-report/
 .cache/
 .local/
 apps/web/public/licenses/THIRD-PARTY-NOTICES.txt
+apps/docs/public/licenses/THIRD-PARTY-NOTICES.txt
 target/
 .build/
 .swiftpm/

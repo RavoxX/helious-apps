@@ -53,13 +53,23 @@ fn manifest(engine: &Engine, config: &Value) -> Result<BTreeMap<String, Value>> 
         "GET",
         Value::Null,
     )?;
-    Ok(result["files"]
+    let mut files = BTreeMap::new();
+    // Validate the whole manifest before downloading or changing any file. A
+    // compromised paired server has no authority over local tool configuration.
+    for file in result["files"]
         .as_array()
         .ok_or("Invalid server manifest.")?
-        .iter()
-        .filter(|f| !f["path"].as_str().unwrap_or("").contains(".conflict-"))
-        .map(|f| (f["path"].as_str().unwrap_or("").to_lowercase(), f.clone()))
-        .collect())
+    {
+        let path = crate::vault::logical(file["path"].as_str().ok_or("Invalid server path.")?)
+            .map_err(|_| {
+                "Server manifest contains an excluded or invalid local path. No files were synced."
+            })?;
+        if !path.contains(".conflict-") && files.insert(path.to_lowercase(), file.clone()).is_some()
+        {
+            return Err("Server manifest contains duplicate local paths.".into());
+        }
+    }
+    Ok(files)
 }
 fn remote_bytes(engine: &Engine, config: &Value, file: &Value) -> Result<Value> {
     let result = engine.request(

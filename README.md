@@ -9,6 +9,8 @@ Public application and self-hosting source for Helious. The marketing website an
 
 Read [AGENTS.md](AGENTS.md), [desktop setup](apps/docs/desktop.md), [Docker installation](apps/docs/deployment.md) and [security guidance](SECURITY.md). Native desktop previews are built by GitHub Actions; see the desktop guide for feature differences from the browser. No marketing homepage is shipped: the server redirects / to /app/.
 
+Before opening registration, review [operations and restore recovery](apps/docs/operations.md) and [dependency/attribution scope](apps/docs/dependencies.md). Production advisories are checked in CI; image startup is tested with isolated synthetic data.
+
 The browser workspace includes [daily notes, Markdown templates and typed YAML properties](apps/docs/authoring.md), plus [portable JSON Canvas boards](apps/docs/canvas.md) with cards, connections and conflict-safe saves. It also includes [rich reading/media](apps/docs/reading.md): callouts, highlighted code, math, on-demand diagrams and scoped note/image/audio/PDF embeds. Native 0.9 brings native authoring/Canvas/reading to Windows and macOS. [Permission-reviewed extensions and browser reading appearance](apps/docs/extensions.md) complete the Phase 9 authoring scope; see the platform guides for supported syntax and control differences.
 
 ## Self-host with Docker Compose

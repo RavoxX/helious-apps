@@ -807,6 +807,10 @@ mod tests {
             assert!(image.height() > 10);
         }
         assert!(render_formula(r"\href{https://example.com}{x}", false).is_err());
+        // Within Helious's byte/brace limits, but beyond the parser's stack
+        // budget. RUSTSEC-2026-0311 must produce an error, never abort the app.
+        let nested = format!("{}1{}", r"\frac{1}{".repeat(35), "}".repeat(35));
+        assert!(render_formula(&nested, false).is_err());
         assert!(render_diagram("graph LR\n%%{init:{}}%%\nA-->B", false).is_err());
         assert!(image_preview(b"<svg onload='x'/>").is_err());
     }

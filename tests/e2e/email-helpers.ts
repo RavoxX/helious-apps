@@ -13,7 +13,10 @@ export async function latestLink(request: APIRequestContext, email: string, kind
   return /http:\/\/localhost:3100\/(?:verify-email|reset-password)\?token=[\w-]+/.exec(text)![0];
 }
 export async function verifyAndSignIn(page: Page, email: string, password: string) {
-  await expect(page.getByRole('heading', { name: 'Check your inbox.' })).toBeVisible();
+  // Argon2 + database writes may exceed the default assertion timeout on CI.
+  await expect(page.getByRole('heading', { name: 'Check your inbox.' })).toBeVisible({
+    timeout: 15000,
+  });
   const link = await latestLink(page.request, email);
   await page.goto(link);
   await expect(

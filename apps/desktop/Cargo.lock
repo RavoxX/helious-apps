@@ -1950,7 +1950,7 @@ dependencies = [
 
 [[package]]
 name = "helious-native"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -1983,7 +1983,7 @@ dependencies = [
 
 [[package]]
 name = "helious-windows"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "base64 0.22.1",
  "dirs",
@@ -2535,9 +2535,9 @@ dependencies = [
 
 [[package]]
 name = "latex-rust"
-version = "1.0.2"
+version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "002bcaf7505b3516103424d8211b44cc4eb401cec17d35283402882b403c11fc"
+checksum = "b2ea50fa57252826d9b4dd09361c524c2c50e4a300623a48f168bb5c8a84d14c"
 dependencies = [
  "ttf-parser",
 ]

@@ -119,7 +119,7 @@ export async function buildApp(
     openapi: {
       info: {
         title: 'Helious API',
-        version: '0.8.0',
+        version: '0.9.1',
         description:
           'Helious accounts and knowledge API. Mutations require an exact Origin and X-CSRF-Token from /api/auth/csrf. Attachments use multipart; other bodies use JSON.',
       },
@@ -136,7 +136,7 @@ export async function buildApp(
     async (_request, reply) => {
       try {
         await db.command({ ping: 1 });
-        return { status: 'ok', service: 'helious', phase: 8 };
+        return { status: 'ok', service: 'helious', phase: 10 };
       } catch {
         return reply.code(503).send({ status: 'unavailable' });
       }

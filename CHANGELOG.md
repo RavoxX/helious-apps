@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 — Native sync and dependency hardening
+
+Native sync validates every remote path before downloading or changing files. Hidden components and generated directories (including case variants) use the same exclusion policy as local scanning, direct writes and recovery replay. A paired server cannot create an excluded configuration file before returning a sync error. Existing files, local history and conflict copies retain their stale-write guards. Back up first; preserved journals/configurations containing excluded paths are refused rather than silently rewritten.
+
+Updated the native formula renderer for RUSTSEC-2026-0311 and added nested-input coverage. Updated JavaScript static serving, glob/minimatch, KaTeX and email rendering dependencies. Added production advisory CI, weekly RustSec checks, server/docs attribution, exact upstream notice fallbacks, build-context exclusions and an isolated self-hosting container smoke check. Added operations/restore/incident and dependency-scope guides. Cloud deployment and platform signing/notarization remain separate launch work.
+
 ## 0.8.1 — Native desktop rebuild and public app distribution
 
 Application/self-hosting source and releases now live in RavoxX/helious-apps. Marketing code, illustrations and film remain private. AGENTS.md describes repository ownership, checks, Cloud availability and signing boundaries.
