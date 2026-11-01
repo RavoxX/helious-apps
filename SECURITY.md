@@ -38,6 +38,8 @@ All outgoing mail shares the three-per-address rolling limit. Security notificat
 
 - MCP authenticates scoped bearer credentials independently of browser cookies. Tokens are hash-only, bound to a verified account version and explicit vault/Space/action grants. Writes recheck token and policy state inside the transaction. OAuth uses exact redirect/resource binding, S256, single-use codes and rotating refresh families; replay revokes the family. Registered client names are untrusted and consent displays the actual callback origin. See [MCP limits and setup](apps/docs/mcp.md).
 
+- MCP secret creation requires a separate `secrets:create` grant, enrolled owner MFA and a currently writable explicitly selected Space. It uses the existing envelope encryption and transactional audit service, returns only metadata, rejects duplicate names and cannot opt secrets into agent reading. Created secrets require owner opt-in, an exact read grant and their approval policy before retrieval. Revoked tokens are hidden from connection lists without deleting their retained records.
+
 - Protect against unauthenticated API access, cookie theft through script access, session fixation, CSRF, credential guessing and cross-account session revocation.
 - TLS terminates at a trusted reverse proxy. Trust only explicit proxy IPs/CIDRs. Never trust arbitrary forwarded IP headers. The app binds to loopback in Compose.
 - A root or database administrator can access account data. This is not an end-to-end encrypted system. A compromised host or browser can act as its user.
