@@ -1,6 +1,6 @@
 import { ObjectId, type ClientSession, type Db } from 'mongodb';
 import type { FastifyRequest } from 'fastify';
-import { canReadSecret } from '@helious/core';
+import { canCreateSecret, canReadSecret } from '@helious/core';
 import { collections, type UserDocument } from './db.js';
 import type { KeyRing } from './encryption.js';
 import { createVaultAccess, type PrincipalResolver, type AccessVerifier } from './vault-access.js';
@@ -191,9 +191,12 @@ export function createSecretsService(
     request: FastifyRequest,
     vaultId: string,
     input: SecretInput,
-    proof: Proof,
+    proof?: Proof,
   ) {
-    access.requireOwner(request);
+    if (access.principal(request).kind === 'user') {
+      access.requireOwner(request);
+      if (!proof) throw securityError('Confirm your identity before creating a secret.', 403);
+    }
     const id = new ObjectId();
     return transaction(
       request,
@@ -201,7 +204,18 @@ export function createSecretsService(
       'secret.create',
       id.toHexString(),
       async (_user, session) => {
-        const space = await access.requireSpace(request, vaultId, input.spaceId, 'write', session);
+        const current = access.principal(request);
+        const space =
+          current.kind === 'user'
+            ? await access.requireSpace(request, vaultId, input.spaceId, 'write', session)
+            : await vaults.spaces.findOne(
+                { ...access.base(request, vaultId), _id: new ObjectId(input.spaceId) },
+                { session },
+              );
+        if (!space || !canCreateSecret(current, policy(space)))
+          throw securityError('Secret creation is not permitted for this Space.', 403);
+        if (current.kind === 'agent' && (input.agentAccess !== 'none' || !input.requireApproval))
+          throw securityError('Agent-created secrets must require owner-granted read access.', 403);
         const value = Buffer.from(input.value ?? '', 'utf8');
         if (value.length < 1 || value.length > 65536)
           throw securityError('Secret values must contain 1–65,536 UTF-8 bytes.', 400);

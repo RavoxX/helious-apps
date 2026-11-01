@@ -23,6 +23,7 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
     .click();
   await expect(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
   await page.getByRole('button', { name: 'Create agent token', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: /^Store new encrypted secrets/ })).toBeDisabled();
   await page.getByLabel('Connection name', { exact: true }).fill('Codex test connection');
   const createToken = page.getByRole('button', { name: 'Create token with these permissions' });
   await expect(createToken).toBeDisabled();
@@ -140,7 +141,9 @@ test('agent settings, project memory, real MCP calls, OAuth consent and revocati
     .filter({ has: page.getByRole('heading', { name: 'Codex test connection', exact: true }) });
   await connection.getByRole('button', { name: 'Revoke', exact: true }).click();
   await connection.getByRole('button', { name: 'Confirm revoke', exact: true }).click();
-  await expect(connection).toContainText('Revoked');
+  await expect(connection).toHaveCount(0);
+  await page.reload();
+  await expect(connection).toHaveCount(0);
   expect((await rpc('list_vaults', {})).status()).toBe(401);
   expect(errors).toEqual([]);
 });

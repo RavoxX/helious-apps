@@ -1,5 +1,11 @@
 # Encrypted secrets
 
+Agents can store a new encrypted secret with MCP `create_secret` only after the owner explicitly
+grants `secrets:create` on a writable Space and enables two-factor authentication. This is write-only:
+the tool returns metadata, cannot overwrite existing secrets and grants no read access. Agent-created
+secrets start with agent access disabled and approval required. The owner separately enables each
+secret and grants its exact read scope when retrieval is appropriate. See [MCP setup](./mcp).
+
 Secrets are available in each vault's **Secrets** tab. They are separate from Markdown notes, attachments, search, graph data, note history and exports. Use **Settings → Security & access** to set up an authenticator, manage recovery codes, review pending agent requests and read the secret audit log.
 
 ## Protect your account first

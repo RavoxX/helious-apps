@@ -10,7 +10,7 @@ export const opaque = (prefix = '') => prefix + randomBytes(32).toString('base64
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 export const constantEqual = (one: string, two: string) =>
   one.length === two.length && timingSafeEqual(Buffer.from(one), Buffer.from(two));
-export type AgentScope = 'notes:read' | 'notes:write' | `secrets:read:${string}`;
+export type AgentScope = 'notes:read' | 'notes:write' | 'secrets:create' | `secrets:read:${string}`;
 export interface Grants {
   vaultIds: string[];
   spaceIds: string[];
@@ -112,7 +112,8 @@ export async function validateGrants(
     spaces.some(
       (space) =>
         space.agentAccess === 'none' ||
-        (grants.scopes.includes('notes:write') && space.agentAccess !== 'read-write'),
+        ((grants.scopes.includes('notes:write') || grants.scopes.includes('secrets:create')) &&
+          space.agentAccess !== 'read-write'),
     )
   )
     throw securityError(
@@ -128,7 +129,7 @@ export async function validateGrants(
   const secrets = grants.scopes
     .filter((scope) => scope.startsWith('secrets:read:'))
     .map((scope) => new ObjectId(scope.slice(13)));
-  if (secrets.length) {
+  if (secrets.length || grants.scopes.includes('secrets:create')) {
     const owner = await collections(db).users.findOne(
       { _id: ownerId, totpEnabled: true },
       { session },

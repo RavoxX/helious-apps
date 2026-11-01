@@ -139,7 +139,7 @@ it('requires bearer auth, validates origin/host, advertises MCP tools, resources
   });
   expect(init.json().result.capabilities).toHaveProperty('tools');
   const tools = (await rpc('tools/list')).json().result.tools;
-  expect(tools).toHaveLength(17);
+  expect(tools).toHaveLength(18);
   expect(
     tools.find((t: { name: string }) => t.name === 'update_note').inputSchema.required,
   ).toContain('revision');
@@ -284,12 +284,94 @@ it('requires explicit scopes and Personal consent; revocation, expiry and accoun
     ).isError,
   ).toBe(true);
   await request('DELETE', `/api/agents/tokens/${reader.metadata.id}`);
+  expect(
+    (await request('GET', '/api/agents/tokens'))
+      .json()
+      .tokens.some((token: { id: string }) => token.id === reader.metadata.id),
+  ).toBe(false);
+  expect((await agentStore(db).findOne({ hash: digest(reader.token) }))?.revokedAt).toBeInstanceOf(
+    Date,
+  );
   expect((await rpc('tools/list', {}, reader.token)).statusCode).toBe(401);
   await agentStore(db).updateOne({ hash: digest(raw) }, { $set: { expiresAt: new Date(0) } });
   expect((await rpc('tools/list')).statusCode).toBe(401);
   const current = await issue(['notes:read']);
   await db.collection('users').updateOne({ email }, { $inc: { authVersion: 1 } });
   expect((await rpc('tools/list', {}, current.token)).statusCode).toBe(401);
+});
+it('stores MCP secrets only with an explicit MFA-backed write-only grant and current Space policy', async () => {
+  const create = {
+    vaultId,
+    spaceId,
+    name: 'Synthetic SSH key',
+    kind: 'ssh-key',
+    value: 'synthetic-ssh-private-material-not-a-real-key',
+  };
+  const denied = await request('POST', '/api/agents/tokens', {
+    name: 'Secret writer',
+    vaultIds: [vaultId],
+    spaceIds: [spaceId],
+    scopes: ['secrets:create'],
+    password,
+  });
+  expect(denied.statusCode).toBe(403);
+  expect((await tool('create_secret', create)).isError).toBe(true);
+  const setup = await request('POST', '/api/account/totp/setup', { password });
+  const enabled = await request('POST', '/api/account/totp/enable', {
+    code: totpCode(fromBase32(setup.json().secret), Math.floor(Date.now() / 30000)),
+  });
+  headers.cookie =
+    headers.cookie!.replace(/; helious_session=[^;]+/, '') +
+    `; helious_session=${enabled.cookies.find((c) => c.name === 'helious_session')!.value}`;
+  const writer = await issue(['secrets:create']);
+  const result = await tool('create_secret', create, writer.token);
+  expect(result.isError).not.toBe(true);
+  expect(JSON.stringify(result)).not.toContain(create.value);
+  const secret = data(result).secret;
+  expect(secret).toMatchObject({
+    kind: 'ssh-key',
+    agentAccess: 'none',
+    requireApproval: true,
+    revision: 1,
+  });
+  const stored = await db.collection('secrets').findOne({ _id: new ObjectId(secret.id) });
+  expect(stored?.encrypted).toBeTruthy();
+  expect(JSON.stringify(stored)).not.toContain(create.value);
+  expect((await tool('get_secret', { vaultId, secretId: secret.id }, writer.token)).isError).toBe(
+    true,
+  );
+  expect(data(await tool('list_secrets', { vaultId }, writer.token)).secrets).toEqual([]);
+  expect((await tool('create_secret', create, writer.token)).isError).toBe(true);
+  expect(
+    (await tool('create_secret', { ...create, name: 'Other', spaceId: personalId }, writer.token))
+      .isError,
+  ).toBe(true);
+  expect(
+    (
+      await tool(
+        'create_secret',
+        { ...create, name: 'Wide', value: '😀'.repeat(20000) },
+        writer.token,
+      )
+    ).isError,
+  ).toBe(true);
+  expect(
+    (await tool('create_secret', { ...create, agentAccess: 'read' }, writer.token)).isError,
+  ).toBe(true);
+  expect(await db.collection('notes').countDocuments({ vaultId: new ObjectId(vaultId) })).toBe(0);
+  const audit = await db
+    .collection('secret_audit')
+    .findOne({ action: 'secret.create', outcome: 'success' });
+  expect(audit?.actor).toMatchObject({ kind: 'agent', id: writer.metadata.id });
+  expect(JSON.stringify(audit)).not.toContain(create.value);
+  await db
+    .collection('spaces')
+    .updateOne({ _id: new ObjectId(spaceId) }, { $set: { agentAccess: 'read' } });
+  expect(
+    (await tool('create_secret', { ...create, name: 'After policy change' }, writer.token)).isError,
+  ).toBe(true);
+  await request('DELETE', `/api/agents/tokens/${writer.metadata.id}`);
+  expect((await rpc('tools/list', {}, writer.token)).statusCode).toBe(401);
 });
 it('requires an exact secret scope and preserves single-use approvals over real MCP', async () => {
   const setup = await request('POST', '/api/account/totp/setup', { password });
@@ -541,7 +623,7 @@ it('bridges the official MCP client over stdio to authenticated Streamable HTTP 
   const sdk = new Client({ name: 'stdio-test', version: '1' });
   try {
     await sdk.connect(transport);
-    expect((await sdk.listTools()).tools).toHaveLength(17);
+    expect((await sdk.listTools()).tools).toHaveLength(18);
     expect(
       (await sdk.listResources()).resources.some((resource) => resource.uri.endsWith('/Stdio.md')),
     ).toBe(true);

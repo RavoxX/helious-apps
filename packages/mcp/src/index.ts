@@ -119,6 +119,17 @@ export const toolDefinitions = [
     },
   ),
   item(
+    'create_secret',
+    'Store a new encrypted secret (including an SSH private key) without returning its value. Requires explicit secrets:create and a writable granted Space with owner MFA. New secrets are owner-only and approval-protected; creation never grants read access. Never put credentials in notes or memory.',
+    {
+      ...space,
+      name: z.string().trim().min(1).max(100),
+      kind: z.enum(['password', 'api-key', 'ssh-key', 'env', 'other']),
+      value: z.string().min(1).max(65536),
+    },
+    true,
+  ),
+  item(
     'list_secrets',
     'List names and metadata only for exact secret grants allowed by current policies. No values.',
     { ...vault, spaceId: id.optional() },

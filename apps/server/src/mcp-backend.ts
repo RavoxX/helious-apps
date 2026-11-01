@@ -72,6 +72,21 @@ export async function createAgentBackend(
         request.body.approvalId,
       ),
   );
+  adapter.post<{
+    Params: { vaultId: string };
+    Body: {
+      spaceId: string;
+      name: string;
+      kind: 'password' | 'api-key' | 'ssh-key' | 'env' | 'other';
+      value: string;
+    };
+  }>('/secrets/:vaultId', { preHandler: authenticate }, (request) =>
+    secrets.create(request, request.params.vaultId, {
+      ...request.body,
+      agentAccess: 'none',
+      requireApproval: true,
+    }),
+  );
   await adapter.ready();
   const store = vaultCollections(db);
   function forToken(raw: string, ip: string): MemoryBackend {
@@ -338,6 +353,13 @@ export async function createAgentBackend(
           }
         }
       }
+      if (name === 'create_secret')
+        return call(`/secrets/${v}`, 'POST', {
+          spaceId: s,
+          name: text(args, 'name'),
+          kind: text(args, 'kind'),
+          value: text(args, 'value'),
+        });
       if (name === 'list_secrets') return call(`/secrets/${v}${query()}`);
       if (name === 'get_secret')
         return call(`/secrets/${v}/${text(args, 'secretId')}`, 'POST', {

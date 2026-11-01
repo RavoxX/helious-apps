@@ -16,7 +16,9 @@ import {
   type AgentScope,
 } from './agent-tokens.js';
 import { securityError, type SecurityService } from './security-service.js';
-export const scopeSchema = z.string().regex(/^(?:notes:(?:read|write)|secrets:read:[a-f0-9]{24})$/);
+export const scopeSchema = z
+  .string()
+  .regex(/^(?:notes:(?:read|write)|secrets:create|secrets:read:[a-f0-9]{24})$/);
 export const grantsSchema = {
   vaultIds: z
     .array(z.string().regex(/^[a-f0-9]{24}$/))
@@ -141,7 +143,7 @@ export async function registerOAuth(
     resource,
     authorization_servers: [config.PUBLIC_URL],
     bearer_methods_supported: ['header'],
-    scopes_supported: ['notes:read', 'notes:write'],
+    scopes_supported: ['notes:read', 'notes:write', 'secrets:create'],
     resource_name: 'Helious memory',
   };
   for (const path of [
@@ -160,7 +162,7 @@ export async function registerOAuth(
     code_challenge_methods_supported: ['S256'],
     authorization_response_iss_parameter_supported: true,
     token_endpoint_auth_methods_supported: ['none'],
-    scopes_supported: ['notes:read', 'notes:write'],
+    scopes_supported: ['notes:read', 'notes:write', 'secrets:create'],
   }));
   app.post('/oauth/register', protocol, async (request, reply) => {
     const body = parse(

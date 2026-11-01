@@ -92,6 +92,7 @@ export async function registerAgentRoutes(
             { $match: { ownerId: request.auth!.user._id } },
             { $sort: { createdAt: -1 } },
             { $group: { _id: { $ifNull: ['$familyId', '$_id'] }, token: { $first: '$$ROOT' } } },
+            { $match: { 'token.revokedAt': { $exists: false } } },
             { $sort: { 'token.createdAt': -1 } },
             { $limit: 200 },
           ])

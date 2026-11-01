@@ -7,7 +7,7 @@ export type KnowledgePrincipal =
       actorId: string;
       vaultIds: string[];
       spaceIds: string[];
-      scopes: ('notes:read' | 'notes:write' | `secrets:read:${string}`)[];
+      scopes: ('notes:read' | 'notes:write' | 'secrets:create' | `secrets:read:${string}`)[];
     };
 export interface SpacePolicy {
   id: string;
@@ -38,6 +38,17 @@ export interface SecretPolicy {
   vaultId: string;
   spaceId: string;
   agentAccess: 'none' | 'read';
+}
+/** Creation is write-only; it never grants access to any stored secret value. */
+export function canCreateSecret(principal: KnowledgePrincipal, space: SpacePolicy) {
+  if (principal.ownerId !== space.ownerId) return false;
+  if (principal.kind === 'user') return principal.actorId === principal.ownerId;
+  return (
+    principal.vaultIds.includes(space.vaultId) &&
+    principal.spaceIds.includes(space.id) &&
+    principal.scopes.includes('secrets:create') &&
+    space.agentAccess === 'read-write'
+  );
 }
 export function canReadSecret(
   principal: KnowledgePrincipal,

@@ -98,29 +98,46 @@ Ask the user before requesting a secret; use only its exact scoped grant.
 If approval is pending, wait for the user's decision before retrying with approvalId.
 ```
 
+## Creating encrypted secrets
+
+Grant **Store new encrypted secrets (write only)** when creating a connection. This is the separate
+`secrets:create` scope, requires owner two-factor authentication, and only permits selected Spaces
+whose current agent policy allows writes. Existing note tokens gain no additional permissions.
+
+Use `create_secret` with `vaultId`, `spaceId`, `name`, `kind` (`ssh-key`, `api-key`, `password`,
+`env` or `other`) and `value`. The value is bounded to 65,536 UTF-8 bytes, encrypted in the separate
+Secrets collection and audited. The tool returns metadata only. Duplicate names fail without
+overwriting. Do not place credentials in Markdown, memory entries or tool logs.
+
+Agent-created secrets initially block agent reads and require approval. The owner must explicitly
+allow agent access in Secrets and issue an exact `secrets:read:<secretId>` grant before retrieval;
+creation never adds that grant. Revoking the connection immediately disables its access and removes
+it from the visible connection list; retained token/audit records are not deleted by this UI change.
+
 ## MCP tools, resources and prompt
 
 All IDs are ObjectId strings. Writing tools use explicit Spaces or existing note IDs and revisions. Errors appear as MCP tool errors without internal stacks. Search and graph results apply server authorization; filtering in a client is not a security boundary.
 
-| Tool                  | Main arguments and behavior                                                                            |
-| --------------------- | ------------------------------------------------------------------------------------------------------ |
-| `list_vaults`         | No arguments; only granted, currently eligible vault metadata                                          |
-| `list_spaces`         | `vaultId`; granted Spaces and current caps                                                             |
-| `search_notes`        | `vaultId`, `query`, optional `spaceId`, `limit` 1–100                                                  |
-| `read_note`           | `vaultId`, `noteId`; Markdown and revision                                                             |
-| `create_note`         | `vaultId`, `spaceId`, `path`, `markdown`; conflict on occupied path                                    |
-| `update_note`         | `vaultId`, `noteId`, `revision`, `markdown`                                                            |
-| `append_to_note`      | `vaultId`, `noteId`, `revision`, `markdown`                                                            |
-| `move_note`           | `vaultId`, `noteId`, `revision`, `path`, optional `spaceId`; atomic accessible inbound rewrites        |
-| `list_folder`         | `vaultId`, optional `spaceId`, `path`, `offset`, `limit`; note metadata only                           |
-| `get_backlinks`       | `vaultId`, `noteId`; linked/unlinked mentions and permitted outgoing metadata                          |
-| `get_graph_neighbors` | `vaultId`, `noteId`, `depth` 1–5; at most 500 nodes, explicit truncation flag                          |
-| `list_tags`           | `vaultId`, optional `spaceId`                                                                          |
-| `get_daily_note`      | `vaultId`, `spaceId`, optional ISO `date` and `create`; UTC date default, writes require `notes:write` |
-| `remember`            | `vaultId`, `spaceId`, `project`, `entry` up to 16,000 characters                                       |
-| `recall`              | `vaultId`, `query`, optional `spaceId`, `project`, `limit`; keyword memory retrieval                   |
-| `list_secrets`        | `vaultId`, optional `spaceId`; exact permitted grant metadata only                                     |
-| `get_secret`          | `vaultId`, `secretId`, optional `approvalId`; scoped, audited, approval-aware                          |
+| Tool                  | Main arguments and behavior                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `list_vaults`         | No arguments; only granted, currently eligible vault metadata                                                 |
+| `list_spaces`         | `vaultId`; granted Spaces and current caps                                                                    |
+| `search_notes`        | `vaultId`, `query`, optional `spaceId`, `limit` 1–100                                                         |
+| `read_note`           | `vaultId`, `noteId`; Markdown and revision                                                                    |
+| `create_note`         | `vaultId`, `spaceId`, `path`, `markdown`; conflict on occupied path                                           |
+| `update_note`         | `vaultId`, `noteId`, `revision`, `markdown`                                                                   |
+| `append_to_note`      | `vaultId`, `noteId`, `revision`, `markdown`                                                                   |
+| `move_note`           | `vaultId`, `noteId`, `revision`, `path`, optional `spaceId`; atomic accessible inbound rewrites               |
+| `list_folder`         | `vaultId`, optional `spaceId`, `path`, `offset`, `limit`; note metadata only                                  |
+| `get_backlinks`       | `vaultId`, `noteId`; linked/unlinked mentions and permitted outgoing metadata                                 |
+| `get_graph_neighbors` | `vaultId`, `noteId`, `depth` 1–5; at most 500 nodes, explicit truncation flag                                 |
+| `list_tags`           | `vaultId`, optional `spaceId`                                                                                 |
+| `get_daily_note`      | `vaultId`, `spaceId`, optional ISO `date` and `create`; UTC date default, writes require `notes:write`        |
+| `remember`            | `vaultId`, `spaceId`, `project`, `entry` up to 16,000 characters                                              |
+| `recall`              | `vaultId`, `query`, optional `spaceId`, `project`, `limit`; keyword memory retrieval                          |
+| `list_secrets`        | `vaultId`, optional `spaceId`; exact permitted grant metadata only                                            |
+| `create_secret`       | `vaultId`, `spaceId`, `name`, `kind`, `value`; explicit write-only scope, encryption and audit; metadata only |
+| `get_secret`          | `vaultId`, `secretId`, optional `approvalId`; scoped, audited, approval-aware                                 |
 
 Resources use `helious://<vaultId>/<spaceId>/<percent-encoded-path.md>`. Resource listing returns pages of 100 with `nextCursor` and refuses more than 100,000 total resources rather than silently truncating. Reading checks the URI's vault/Space and current permission. `project_context` accepts string arguments `vaultId`, `spaceId`, `project`; it assembles up to 20 notes / 64 KiB with an explicit untrusted-data preface. It never resolves secret references.
 

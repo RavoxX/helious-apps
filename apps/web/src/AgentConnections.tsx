@@ -47,6 +47,7 @@ export function GrantChoices({
   const [selected, setSelected] = useState<string[]>([]),
     [read, setRead] = useState(!requested || requested.includes('notes:read')),
     [write, setWrite] = useState(false),
+    [createSecrets, setCreateSecrets] = useState(false),
     [secrets, setSecrets] = useState<string[]>([]),
     [personal, setPersonal] = useState<string[]>([]);
   const toggle = (values: string[], id: string) =>
@@ -59,6 +60,7 @@ export function GrantChoices({
       scopes: [
         ...(read ? ['notes:read'] : []),
         ...(write ? ['notes:write'] : []),
+        ...(createSecrets && options.totpEnabled ? ['secrets:create'] : []),
         ...secrets
           .filter((id) =>
             options.secrets.some((secret) => secret.id === id && selected.includes(secret.spaceId)),
@@ -67,7 +69,7 @@ export function GrantChoices({
       ],
       personalConsent: personal.filter((id) => selected.includes(id)),
     });
-  }, [selected, read, write, secrets, personal, options, onChange]);
+  }, [selected, read, write, createSecrets, secrets, personal, options, onChange]);
   return (
     <div className="grant-choices">
       <fieldset>
@@ -96,6 +98,22 @@ export function GrantChoices({
               }}
             />
             Create and update notes, with version history
+          </label>
+        )}
+        {(!requested || requested.includes('secrets:create')) && (
+          <label>
+            <input
+              type="checkbox"
+              checked={createSecrets}
+              disabled={!options.totpEnabled}
+              onChange={(event) => setCreateSecrets(event.target.checked)}
+            />
+            Store new encrypted secrets (write only)
+            <small>
+              {options.totpEnabled
+                ? 'Requires a writable Space. Reading each secret needs a separate grant.'
+                : 'Enable two-factor authentication in Settings before granting this permission.'}
+            </small>
           </label>
         )}
       </fieldset>
@@ -409,77 +427,87 @@ export function AgentConnections() {
             </div>
           </div>
         )}
-        {!tokens.isPending && !tokens.data?.tokens.length && !creating && (
-          <div className="connection-empty">
-            <Terminal size={25} />
-            <h3>Your next agent can start with context.</h3>
-            <p>
-              Create a token for a local coding agent, or connect through OAuth from a remote AI
-              tool. You choose the permissions each time.
-            </p>
-          </div>
-        )}
-        {tokens.data?.tokens.map((token) => (
-          <article className="connection-row" key={token.id}>
-            <div>
-              <h3>{token.name}</h3>
+        {!tokens.isPending &&
+          !tokens.data?.tokens.some((token) => !token.revokedAt) &&
+          !creating && (
+            <div className="connection-empty">
+              <Terminal size={25} />
+              <h3>Your next agent can start with context.</h3>
               <p>
-                {token.kind === 'oauth' ? 'OAuth connection' : 'Personal agent token'} ·{' '}
-                {token.revokedAt
-                  ? 'Revoked'
-                  : token.invalidated
-                    ? 'Reconnect required'
-                    : new Date(token.expiresAt) <= new Date()
-                      ? 'Expired'
-                      : `Expires ${new Date(token.expiresAt).toLocaleDateString()}`}
+                Create a token for a local coding agent, or connect through OAuth from a remote AI
+                tool. You choose the permissions each time.
               </p>
-              <p>
-                {token.spaceIds
-                  .map(
-                    (id) =>
-                      options.data?.spaces.find((space) => space.id === id)?.name ??
-                      'Unavailable Space',
-                  )
-                  .join(' · ')}{' '}
-                ·{' '}
-                {token.scopes
-                  .map((scope) => (scope.startsWith('secrets:') ? 'one secret' : scope))
-                  .join(', ')}
-              </p>
-              <small>
-                {token.lastUsedAt
-                  ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}`
-                  : 'Not used yet'}
-              </small>
             </div>
-            {!token.revokedAt &&
-              (confirm === token.id ? (
-                <div className="security-actions">
-                  <span>Disconnect this agent?</span>
-                  <button
-                    className="secondary-button"
-                    disabled={busy}
-                    onClick={() =>
-                      void act(async () => {
-                        await api(`/agents/tokens/${token.id}`, 'DELETE');
-                        setConfirm(null);
-                        setNotice('Connection revoked.');
-                      })
-                    }
-                  >
-                    Confirm revoke
+          )}
+        {tokens.data?.tokens
+          .filter((token) => !token.revokedAt)
+          .map((token) => (
+            <article className="connection-row" key={token.id}>
+              <div>
+                <h3>{token.name}</h3>
+                <p>
+                  {token.kind === 'oauth' ? 'OAuth connection' : 'Personal agent token'} ·{' '}
+                  {token.revokedAt
+                    ? 'Revoked'
+                    : token.invalidated
+                      ? 'Reconnect required'
+                      : new Date(token.expiresAt) <= new Date()
+                        ? 'Expired'
+                        : `Expires ${new Date(token.expiresAt).toLocaleDateString()}`}
+                </p>
+                <p>
+                  {token.spaceIds
+                    .map(
+                      (id) =>
+                        options.data?.spaces.find((space) => space.id === id)?.name ??
+                        'Unavailable Space',
+                    )
+                    .join(' · ')}{' '}
+                  ·{' '}
+                  {token.scopes
+                    .map((scope) =>
+                      scope === 'secrets:create'
+                        ? 'Store encrypted secrets'
+                        : scope.startsWith('secrets:')
+                          ? 'one secret'
+                          : scope,
+                    )
+                    .join(', ')}
+                </p>
+                <small>
+                  {token.lastUsedAt
+                    ? `Last used ${new Date(token.lastUsedAt).toLocaleString()}`
+                    : 'Not used yet'}
+                </small>
+              </div>
+              {!token.revokedAt &&
+                (confirm === token.id ? (
+                  <div className="security-actions">
+                    <span>Disconnect this agent?</span>
+                    <button
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void act(async () => {
+                          await api(`/agents/tokens/${token.id}`, 'DELETE');
+                          setConfirm(null);
+                          setNotice('Connection revoked.');
+                        })
+                      }
+                    >
+                      Confirm revoke
+                    </button>
+                    <button className="subtle-button" onClick={() => setConfirm(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button className="secondary-button" onClick={() => setConfirm(token.id)}>
+                    Revoke
                   </button>
-                  <button className="subtle-button" onClick={() => setConfirm(null)}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button className="secondary-button" onClick={() => setConfirm(token.id)}>
-                  Revoke
-                </button>
-              ))}
-          </article>
-        ))}
+                ))}
+            </article>
+          ))}
       </section>
       <section className="connection-section">
         <h2>Connect your AI tool</h2>
